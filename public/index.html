@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#071a33" />
+  <title>Pulse by Doveston Health</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">P</div>
+        <div><strong>Pulse</strong><span>by Doveston Health</span></div>
+      </div>
+
+      <nav class="nav" aria-label="Primary">
+        <button class="nav-item active" data-view="pulse"><span>⌂</span> Pulse</button>
+        <button class="nav-item" data-view="referrals"><span>↗</span> Referral Hub <em>7</em></button>
+        <button class="nav-item" data-view="patients"><span>◎</span> Patients</button>
+        <button class="nav-item" data-view="team"><span>◉</span> Team</button>
+        <button class="nav-item" data-view="finance"><span>$</span> Finance</button>
+        <button class="nav-item" data-view="marketing"><span>↗</span> Marketing</button>
+        <button class="nav-item" data-view="operations"><span>▦</span> Operations</button>
+        <button class="nav-item" data-view="knowledge"><span>▤</span> Knowledge</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="demo-badge">DEMO DATA</div>
+        <button class="nav-item" data-view="settings"><span>⚙</span> Settings</button>
+        <div class="profile">
+          <div class="avatar">BD</div>
+          <div><strong>Ben Doveston</strong><span>Director</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-button mobile-only" id="menuButton" aria-label="Open menu">☰</button>
+        <div class="search"><span>⌕</span><input id="globalSearch" placeholder="Search Pulse..." /></div>
+        <div class="top-actions">
+          <button class="icon-button" id="themeButton" aria-label="Toggle appearance">◐</button>
+          <button class="icon-button" aria-label="Notifications">♢<span class="notification-dot"></span></button>
+        </div>
+      </header>
+
+      <section class="view active" id="view-pulse">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow" id="todayLabel"></p>
+            <h1>Good morning, Ben.</h1>
+            <p>Here is what needs your attention across Doveston Health today.</p>
+          </div>
+          <button class="primary-button" id="refreshBrief">↻ Refresh brief</button>
+        </div>
+
+        <div class="hero-grid">
+          <article class="pulse-card">
+            <div class="card-label">Clinic Pulse</div>
+            <div class="score-ring"><div><strong>92</strong><span>/100</span></div></div>
+            <div class="score-status">● Strong performance</div>
+            <p>Up 4 points from last week</p>
+          </article>
+
+          <article class="morning-card">
+            <div class="card-title-row"><div><span class="ai-spark">✦</span><strong>AI Morning Brief</strong></div><span class="live-chip">LIVE PREVIEW</span></div>
+            <h2>Doveston Health is tracking above target this week.</h2>
+            <p>Physiotherapy utilisation is strong, but Dietetics has eight available appointments. Seven referrals need action and three WorkCover patients have not rebooked.</p>
+            <div class="brief-actions">
+              <button data-view-target="referrals">Review referrals →</button>
+              <button>View diary gaps →</button>
+            </div>
+          </article>
+        </div>
+
+        <div class="section-heading"><div><h2>Today’s priorities</h2><p>Actions with the greatest operational impact.</p></div><button class="text-button">View all tasks</button></div>
+        <div class="priority-grid" id="priorityGrid"></div>
+
+        <div class="section-heading"><div><h2>Clinic performance</h2><p>Current month compared with target.</p></div><select class="select"><option>This month</option><option>This week</option><option>This quarter</option></select></div>
+        <div class="kpi-grid" id="kpiGrid"></div>
+
+        <div class="content-grid">
+          <article class="panel">
+            <div class="panel-head"><div><h3>Diary health</h3><p>Capacity across the next seven days</p></div><button class="text-button">Open diary</button></div>
+            <div class="bar-list" id="diaryBars"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h3>Referral pipeline</h3><p>Current referral workflow</p></div><button class="text-button" data-view-target="referrals">Open hub</button></div>
+            <div class="pipeline" id="pipeline"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="view-referrals">
+        <div class="page-head">
+          <div><p class="eyebrow">REFERRAL OPERATIONS</p><h1>Referral Hub</h1><p>Track every referral from receipt through to booked care.</p></div>
+          <button class="primary-button" id="newReferralButton">＋ Add referral</button>
+        </div>
+
+        <div class="referral-stats" id="referralStats"></div>
+
+        <article class="panel referral-panel">
+          <div class="toolbar">
+            <div class="search table-search"><span>⌕</span><input id="referralSearch" placeholder="Search patient or referrer..." /></div>
+            <select id="typeFilter" class="select"><option value="all">All types</option><option>Medicare</option><option>NDIS</option><option>WorkCover</option><option>DVA</option><option>Private</option><option>Aged Care</option></select>
+            <select id="statusFilter" class="select"><option value="all">All statuses</option><option>Needs Review</option><option>Patient Contacted</option><option>Appointment Booked</option><option>Active</option><option>Information Missing</option></select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Patient</th><th>Referral type</th><th>Referrer</th><th>Received</th><th>Status</th><th>Assigned</th><th></th></tr></thead>
+              <tbody id="referralTable"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="view empty-view" id="view-patients"><h1>Patients</h1><p>Patient journey and retention workspace is queued for the next sprint.</p></section>
+      <section class="view empty-view" id="view-team"><h1>Team</h1><p>Practitioner scorecards, mentoring and goals are queued for the next sprint.</p></section>
+      <section class="view empty-view" id="view-finance"><h1>Finance</h1><p>Xero reporting and revenue forecasting will be connected in a later sprint.</p></section>
+      <section class="view empty-view" id="view-marketing"><h1>Marketing</h1><p>Campaign attribution and referral-source ROI are queued for development.</p></section>
+      <section class="view empty-view" id="view-operations"><h1>Operations</h1><p>Tasks, compliance and clinic systems will live here.</p></section>
+      <section class="view empty-view" id="view-knowledge"><h1>Knowledge</h1><p>Policies, SOPs and staff resources will live here.</p></section>
+      <section class="view empty-view" id="view-settings"><h1>Settings</h1><p>Integrations, permissions and clinic configuration will live here.</p></section>
+    </main>
+  </div>
+
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer" id="referralDrawer" aria-hidden="true">
+    <button class="drawer-close" id="drawerClose">×</button>
+    <div id="drawerContent"></div>
+  </aside>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <form class="modal" id="referralForm">
+      <div class="modal-head"><div><h2>Add referral</h2><p>Create a demonstration referral record.</p></div><button type="button" id="modalClose">×</button></div>
+      <div class="form-grid">
+        <label>Patient name<input name="patient" required placeholder="e.g. Jordan Smith" /></label>
+        <label>Referral type<select name="type" required><option>Medicare</option><option>NDIS</option><option>WorkCover</option><option>DVA</option><option>Private</option><option>Aged Care</option></select></label>
+        <label>Referrer<input name="referrer" required placeholder="e.g. Dr Patel" /></label>
+        <label>Assigned clinician<select name="assigned"><option>Oakleigh Benson</option><option>Caitlin Theocharis</option><option>Declan Frankel</option><option>Lily Pearson</option><option>Gemma Brown</option></select></label>
+        <label>Status<select name="status"><option>Needs Review</option><option>Information Missing</option><option>Patient Contacted</option><option>Appointment Booked</option><option>Active</option></select></label>
+        <label>Received via<select name="channel"><option>Email</option><option>Fax</option><option>In person</option><option>Phone</option></select></label>
+      </div>
+      <div class="modal-actions"><button type="button" class="secondary-button" id="modalCancel">Cancel</button><button class="primary-button">Save referral</button></div>
+    </form>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "doveston-health-pulse",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "NODE_ENV=production node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.1.0"
+  },
+  "description": "Doveston Health Pulse interactive MVP"
+}
