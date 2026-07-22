@@ -20,22 +20,89 @@ Pulse is Doveston Health's clinic operations and intelligence platform. This rep
 
 All patient, referrer and performance information in this preview is fictional demonstration data. Do not add genuine patient information until authentication, permissions, encrypted storage, audit logging and appropriate production hosting are implemented.
 
-## Run locally
+## Requirements
 
-1. Install the current Node.js LTS release.
-2. Open a terminal in this project folder.
-3. Run:
+- Node.js 20, 22 or 24
+- npm
+
+## Local development
+
+1. Open a terminal in this project folder.
+2. Install dependencies:
 
 ```bash
 npm install
+```
+
+3. Create a local `.env` file from the committed template.
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Windows Command Prompt:
+
+```bat
+copy .env.example .env
+```
+
+macOS or Linux:
+
+```bash
+cp .env.example .env
+```
+
+4. Start the development server:
+
+```bash
 npm run dev
 ```
 
-4. Open `http://localhost:3000`.
+5. Open `http://localhost:3000`.
+
+Development defaults to port `3000` and uses a development-only session secret when `SESSION_SECRET` is empty. Never use that default outside local development.
+
+## Production-style start
+
+`npm start` works consistently on Windows, macOS and Linux and sets `NODE_ENV=production` when it has not already been provided. Production startup requires a non-empty `SESSION_SECRET`:
+
+Windows PowerShell:
+
+```powershell
+$env:SESSION_SECRET = '<generate-a-long-random-secret>'
+npm start
+```
+
+Windows Command Prompt:
+
+```bat
+set SESSION_SECRET=<generate-a-long-random-secret>
+npm start
+```
+
+macOS or Linux:
+
+```bash
+SESSION_SECRET='<generate-a-long-random-secret>' npm start
+```
+
+Alternatively, set `SESSION_SECRET` in a local `.env` file. The application stops during startup when production configuration is incomplete or invalid.
 
 ## Environment variables
 
-Copy `.env.example` to `.env` for local integration development. Never commit real API keys or secrets.
+The application loads local values from `.env`. Environment variables already supplied by the operating system take precedence. Never commit real API keys or secrets.
+
+- `PORT`: listening port; defaults to `3000` and must be between `1` and `65535`.
+- `NODE_ENV`: `development`, `test`, or `production`; defaults to `development` outside `npm start`.
+- `SESSION_SECRET`: required in production; optional for local development.
+- `CLINIKO_ENABLED`: `true` or `false`. If omitted, Cliniko is enabled when `CLINIKO_API_KEY` is present.
+- `CLINIKO_API_KEY`: required whenever Cliniko is enabled.
+- `CLINIKO_USER_AGENT`: optional Cliniko request identity.
+- `XERO_ENABLED`: `true` or `false`. If omitted, Xero is enabled when either Xero credential is present.
+- `XERO_CLIENT_ID` and `XERO_CLIENT_SECRET`: both required whenever Xero is enabled.
+- `XERO_REDIRECT_URI`: OAuth callback URL; defaults to the local callback URL.
 
 ## Preview deployment
 
