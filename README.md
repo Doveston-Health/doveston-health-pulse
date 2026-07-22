@@ -96,6 +96,8 @@ The application loads local values from `.env`. Environment variables already su
 
 - `PORT`: listening port; defaults to `3000` and must be between `1` and `65535`.
 - `NODE_ENV`: `development`, `test`, or `production`; defaults to `development` outside `npm start`.
+- `LOG_LEVEL`: Pino log level; defaults to `info`.
+- `TRUST_PROXY`: Express proxy trust setting; defaults to `loopback`. Set this to the exact proxy hop count or trusted proxy range for the production hosting topology.
 - `SESSION_SECRET`: required in production; optional for local development.
 - `CLINIKO_ENABLED`: `true` or `false`. If omitted, Cliniko is enabled when `CLINIKO_API_KEY` is present.
 - `CLINIKO_API_KEY`: required whenever Cliniko is enabled.
@@ -103,6 +105,13 @@ The application loads local values from `.env`. Environment variables already su
 - `XERO_ENABLED`: `true` or `false`. If omitted, Xero is enabled when either Xero credential is present.
 - `XERO_CLIENT_ID` and `XERO_CLIENT_SECRET`: both required whenever Xero is enabled.
 - `XERO_REDIRECT_URI`: OAuth callback URL; defaults to the local callback URL.
+
+## Service endpoints
+
+- `GET /api/health` reports service status, uptime, version, environment and configured integrations.
+- `GET /api/ready` returns HTTP `200` while the process is ready to serve traffic and HTTP `503` during startup or shutdown.
+
+Every request receives an `X-Request-ID` response header and produces a structured JSON completion log. API routes are rate limited to 100 requests per minute per client by default. Configure `TRUST_PROXY` for the real deployment topology so client IP detection and rate limiting remain accurate.
 
 ## Preview deployment
 

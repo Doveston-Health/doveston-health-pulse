@@ -1,9 +1,14 @@
 import 'dotenv/config';
+import { readFileSync } from 'node:fs';
+
+const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 const VALID_NODE_ENVIRONMENTS = new Set(['development', 'test', 'production']);
 const ENVIRONMENT = Object.freeze({
   port: Object.freeze({name: 'PORT', defaultValue: '3000'}),
   nodeEnv: Object.freeze({name: 'NODE_ENV', defaultValue: process.argv.includes('--production') ? 'production' : 'development'}),
+  logLevel: Object.freeze({name: 'LOG_LEVEL', defaultValue: 'info'}),
+  trustProxy: Object.freeze({name: 'TRUST_PROXY', defaultValue: 'loopback'}),
   sessionSecret: Object.freeze({name: 'SESSION_SECRET', defaultValue: 'pulse-development-only-session-secret'}),
   clinikoEnabled: Object.freeze({name: 'CLINIKO_ENABLED'}),
   clinikoApiKey: Object.freeze({name: 'CLINIKO_API_KEY'}),
@@ -34,6 +39,17 @@ function readPort() {
   }
 
   return port;
+}
+
+function readTrustProxy() {
+  const value = readString(ENVIRONMENT.trustProxy);
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+
+  const hops = Number(value);
+  if (Number.isInteger(hops) && hops >= 0) return hops;
+
+  return value;
 }
 
 function loadConfig() {
@@ -85,9 +101,22 @@ function loadConfig() {
   }
 
   return Object.freeze({
+    app: Object.freeze({
+      name: packageJson.name,
+      version: packageJson.version
+    }),
     nodeEnv,
     port,
     isProduction: nodeEnv === 'production',
+    logLevel: readString(ENVIRONMENT.logLevel),
+    trustProxy: readTrustProxy(),
+    http: Object.freeze({
+      shutdownTimeoutMs: 10000,
+      rateLimit: Object.freeze({
+        windowMs: 60000,
+        limit: 100
+      })
+    }),
     sessionSecret,
     cliniko: Object.freeze({
       enabled: clinikoEnabled,
