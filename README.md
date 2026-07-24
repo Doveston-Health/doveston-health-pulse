@@ -113,6 +113,29 @@ The application loads local values from `.env`. Environment variables already su
 
 Every request receives an `X-Request-ID` response header and produces a structured JSON completion log. API routes are rate limited to 100 requests per minute per client by default. Configure `TRUST_PROXY` for the real deployment topology so client IP detection and rate limiting remain accurate.
 
+## Architecture
+
+Pulse uses a modular monolith structure under `src/`:
+
+```text
+src/
+  app.js                         Express application composition
+  server.js                      HTTP listener startup
+  core/
+    config/index.js              Environment loading and validation
+    logging/logger.js            Structured logging and redaction
+    middleware/                  Global HTTP middleware
+    server/graceful-shutdown.js  Process lifecycle handling
+  modules/
+    system/                      Health and readiness module
+    integrations/                Existing Cliniko and Xero route scaffolds
+  shared/
+    errors/app-error.js          Reusable operational error
+    http/async-handler.js        Async controller adapter
+```
+
+Modules own their HTTP and status behaviour. `core` contains application-wide infrastructure and may not depend on feature modules. `shared` contains small framework-level primitives without business ownership. Only `src/core/config/index.js` may read environment variables. The root `app.js` and `server.js` remain compatibility entry points, while the existing `public/` directory remains the frontend asset root.
+
 ## Preview deployment
 
 The `public` directory can be deployed as a static preview. The Express server will also serve the application when deployed to a Node-compatible host.

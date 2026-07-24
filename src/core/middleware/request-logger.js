@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import pinoHttp from 'pino-http';
-import { logger } from '../logger.js';
+import { logger } from '../logging/logger.js';
 
 function requestPath(url) {
   try {

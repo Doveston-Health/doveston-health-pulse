@@ -1,5 +1,5 @@
-import { config } from '../config.js';
-import { redactSensitiveText } from '../logger.js';
+import { config } from '../config/index.js';
+import { redactSensitiveText } from '../logging/logger.js';
 
 export function apiNotFound(request, response) {
   response.status(404).json({

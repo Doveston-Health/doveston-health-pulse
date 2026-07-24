@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { readFileSync } from 'node:fs';
 
-const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+const packageJson = JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8'));
 
 const VALID_NODE_ENVIRONMENTS = new Set(['development', 'test', 'production']);
 const ENVIRONMENT = Object.freeze({

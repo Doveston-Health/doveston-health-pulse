@@ -1,5 +1,5 @@
 import pino from 'pino';
-import { config } from './config.js';
+import { config } from '../config/index.js';
 
 const secretValues = [
   config.sessionSecret,
