@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 import { Router } from 'express';
-import { config } from '../config.js';
+import { config } from '../../core/config/index.js';
 
-export const apiRouter = Router();
+export const integrationRouter = Router();
 
 const clinikoHeaders = () => ({
   Authorization: `Basic ${Buffer.from(`${config.cliniko.apiKey}:`).toString('base64')}`,
@@ -10,32 +10,7 @@ const clinikoHeaders = () => ({
   'User-Agent': config.cliniko.userAgent
 });
 
-apiRouter.get('/health', (_request, response) => {
-  const integrations = {
-    clinikoConfigured: config.cliniko.enabled,
-    xeroConfigured: config.xero.enabled
-  };
-
-  response.json({
-    ok: true,
-    status: 'ok',
-    uptime: process.uptime(),
-    version: config.app.version,
-    environment: config.nodeEnv,
-    ...integrations,
-    integrations
-  });
-});
-
-apiRouter.get('/ready', (request, response) => {
-  const ready = request.app.locals.isReady === true;
-  response.status(ready ? 200 : 503).json({
-    ready,
-    status: ready ? 'ready' : 'not_ready'
-  });
-});
-
-apiRouter.get('/cliniko/practitioners', async (_request, response) => {
+integrationRouter.get('/cliniko/practitioners', async (_request, response) => {
   if (!config.cliniko.enabled) {
     return response.status(503).json({error: 'Cliniko is not configured. Add CLINIKO_API_KEY to the server environment.'});
   }
@@ -51,7 +26,7 @@ apiRouter.get('/cliniko/practitioners', async (_request, response) => {
   }
 });
 
-apiRouter.get('/xero/connect', (request, response) => {
+integrationRouter.get('/xero/connect', (request, response) => {
   if (!config.xero.enabled) return response.status(503).send('Xero is not configured.');
 
   const state = crypto.randomBytes(24).toString('hex');
@@ -66,7 +41,7 @@ apiRouter.get('/xero/connect', (request, response) => {
   response.redirect(`https://login.xero.com/identity/connect/authorize?${params}`);
 });
 
-apiRouter.get('/xero/callback', async (request, response) => {
+integrationRouter.get('/xero/callback', async (request, response) => {
   if (!request.query.code || request.query.state !== request.session.xeroState) {
     return response.status(400).send('Invalid OAuth callback.');
   }
