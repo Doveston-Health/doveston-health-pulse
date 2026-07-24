@@ -16,6 +16,7 @@ export const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', config.trustProxy);
 app.locals.isReady = false;
+app.locals.databaseReady = false;
 
 app.use(requestLogger);
 app.use(securityHeaders);

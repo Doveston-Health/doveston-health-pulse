@@ -3,6 +3,7 @@ import { config } from '../config/index.js';
 
 const secretValues = [
   config.sessionSecret,
+  config.database.url,
   config.cliniko.apiKey,
   config.xero.clientSecret
 ].filter(Boolean);
@@ -40,6 +41,7 @@ export const logger = pino({
       '*.refreshToken',
       '*.clientSecret',
       '*.sessionSecret',
+      '*.databaseUrl',
       '*.apiKey'
     ],
     censor: '[Redacted]'

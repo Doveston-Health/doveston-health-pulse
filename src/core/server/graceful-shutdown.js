@@ -1,4 +1,4 @@
-export function registerGracefulShutdown({app, server, logger, timeoutMs}) {
+export function registerGracefulShutdown({app, server, logger, timeoutMs, onShutdown = async () => {}}) {
   let shutdownStarted = false;
 
   function shutdown(signal) {
@@ -14,15 +14,23 @@ export function registerGracefulShutdown({app, server, logger, timeoutMs}) {
     }, timeoutMs);
     forcedShutdown.unref();
 
-    server.close((error) => {
-      clearTimeout(forcedShutdown);
+    server.close(async (error) => {
       if (error) {
+        clearTimeout(forcedShutdown);
         logger.error({err: error, signal}, 'server shutdown failed');
         process.exit(1);
       }
 
-      logger.info({signal}, 'shutdown completed');
-      process.exit(0);
+      try {
+        await onShutdown();
+        clearTimeout(forcedShutdown);
+        logger.info({signal}, 'shutdown completed');
+        process.exit(0);
+      } catch (shutdownError) {
+        clearTimeout(forcedShutdown);
+        logger.error({err: shutdownError, signal}, 'shutdown cleanup failed');
+        process.exit(1);
+      }
     });
 
     server.closeIdleConnections?.();

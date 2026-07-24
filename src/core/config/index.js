@@ -10,6 +10,10 @@ const ENVIRONMENT = Object.freeze({
   logLevel: Object.freeze({name: 'LOG_LEVEL', defaultValue: 'info'}),
   trustProxy: Object.freeze({name: 'TRUST_PROXY', defaultValue: 'loopback'}),
   sessionSecret: Object.freeze({name: 'SESSION_SECRET', defaultValue: 'pulse-development-only-session-secret'}),
+  databaseUrl: Object.freeze({
+    name: 'DATABASE_URL',
+    defaultValue: 'postgresql://pulse:pulse-development-only@localhost:5432/pulse?schema=public'
+  }),
   clinikoEnabled: Object.freeze({name: 'CLINIKO_ENABLED'}),
   clinikoApiKey: Object.freeze({name: 'CLINIKO_API_KEY'}),
   clinikoUserAgent: Object.freeze({name: 'CLINIKO_USER_AGENT', defaultValue: 'Doveston Health Pulse'}),
@@ -73,6 +77,12 @@ function loadConfig() {
     errors.push('SESSION_SECRET is required in production.');
   }
 
+  const configuredDatabaseUrl = readOptionalString(ENVIRONMENT.databaseUrl);
+  const databaseUrl = configuredDatabaseUrl || ENVIRONMENT.databaseUrl.defaultValue;
+  if (nodeEnv === 'production' && !configuredDatabaseUrl) {
+    errors.push('DATABASE_URL is required in production.');
+  }
+
   const clinikoApiKey = readOptionalString(ENVIRONMENT.clinikoApiKey);
   let clinikoEnabled = Boolean(clinikoApiKey);
   try {
@@ -118,6 +128,9 @@ function loadConfig() {
       })
     }),
     sessionSecret,
+    database: Object.freeze({
+      url: databaseUrl
+    }),
     cliniko: Object.freeze({
       enabled: clinikoEnabled,
       apiKey: clinikoApiKey,

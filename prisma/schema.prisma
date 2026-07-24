@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum IntegrationProvider {
+  CLINIKO
+  XERO
+}
+
+enum IntegrationStatus {
+  NOT_CONFIGURED
+  CONFIGURED
+  CONNECTED
+  ERROR
+}
+
+enum CredentialType {
+  API_KEY
+  CLIENT_SECRET
+  ACCESS_TOKEN
+  REFRESH_TOKEN
+}
+
+enum SyncJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id          String      @id @default(uuid()) @db.Uuid
+  email       String      @unique
+  displayName String      @map("display_name")
+  isActive    Boolean     @default(true) @map("is_active")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  roles       UserRole[]
+  auditLogs   AuditLog[]  @relation("AuditLogActor")
+
+  @@map("users")
+}
+
+model Role {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId     String   @db.Uuid @map("user_id")
+  roleId     String   @db.Uuid @map("role_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model Setting {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  value       Json
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorUserId String?  @db.Uuid @map("actor_user_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  actor       User?    @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Integration {
+  id                   String                  @id @default(uuid()) @db.Uuid
+  provider             IntegrationProvider     @unique
+  displayName          String                  @map("display_name")
+  status               IntegrationStatus       @default(NOT_CONFIGURED)
+  lastSuccessfulSyncAt DateTime?               @map("last_successful_sync_at")
+  lastFailedSyncAt     DateTime?               @map("last_failed_sync_at")
+  lastError            String?                 @db.Text @map("last_error")
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @updatedAt @map("updated_at")
+  credentials          IntegrationCredential[]
+  syncJobs             SyncJob[]
+
+  @@map("integrations")
+}
+
+model IntegrationCredential {
+  id             String         @id @default(uuid()) @db.Uuid
+  integrationId  String         @db.Uuid @map("integration_id")
+  credentialType CredentialType @map("credential_type")
+  encryptedValue String         @db.Text @map("encrypted_value")
+  expiresAt      DateTime?      @map("expires_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  integration    Integration    @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, credentialType])
+  @@map("integration_credentials")
+}
+
+model SyncJob {
+  id            String        @id @default(uuid()) @db.Uuid
+  integrationId String?       @db.Uuid @map("integration_id")
+  jobType       String        @map("job_type")
+  status        SyncJobStatus @default(PENDING)
+  startedAt     DateTime?     @map("started_at")
+  completedAt   DateTime?     @map("completed_at")
+  errorMessage  String?       @db.Text @map("error_message")
+  metadata      Json?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  integration   Integration?  @relation(fields: [integrationId], references: [id], onDelete: SetNull)
+
+  @@index([integrationId])
+  @@index([status, createdAt])
+  @@map("sync_jobs")
+}

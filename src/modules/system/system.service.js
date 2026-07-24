@@ -17,9 +17,12 @@ export function getHealthStatus() {
   };
 }
 
-export function getReadinessStatus(isReady) {
+export function getReadinessStatus(isReady, databaseReady) {
+  const ready = isReady && databaseReady;
+
   return {
-    ready: isReady,
-    status: isReady ? 'ready' : 'not_ready'
+    ready,
+    status: ready ? 'ready' : 'not_ready',
+    databaseReady
   };
 }
