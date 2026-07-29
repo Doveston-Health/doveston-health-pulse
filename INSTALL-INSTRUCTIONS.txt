@@ -1,0 +1,96 @@
+PUL-006 — AUTHENTICATION AND ROLE-BASED ACCESS CONTROL
+======================================================
+
+IMPORTANT
+---------
+Back up your project before installing these files.
+This package must be installed into the Doveston Health Pulse project on branch:
+
+feature/pul-006-authentication-rbac
+
+The ZIP contains only files added or changed for PUL-006. It is not a complete
+copy of the project.
+
+
+HOW TO INSTALL
+--------------
+1. Close the running Pulse application.
+2. Open the root folder of the doveston-health-pulse project. This is the folder
+   that already contains package.json, README.md, public, prisma, and src.
+3. Extract the contents of this ZIP directly into that project root.
+4. Allow Windows or your archive program to merge folders and replace existing
+   files when prompted.
+5. Open a terminal in the project root and run:
+
+   npm install
+   npx prisma generate
+   npm run db:migrate:deploy
+   npm run db:seed
+   npm test
+
+6. Copy the new settings from .env.example into your local .env as appropriate.
+   Do not commit real passwords or secrets.
+7. Create the initial Director account by setting:
+
+   BOOTSTRAP_ADMIN_EMAIL
+   BOOTSTRAP_ADMIN_NAME
+   BOOTSTRAP_ADMIN_PASSWORD
+
+   Then run:
+
+   npm run user:bootstrap
+
+8. Start Pulse and open /login:
+
+   npm start
+
+
+FILE LOCATIONS
+--------------
+Each line below is relative to the project root. Keep every file at exactly the
+listed location.
+
+.env.example
+README.md
+package.json
+
+prisma\schema.prisma
+prisma\seed.js
+prisma\migrations\20260728000000_authentication_rbac\migration.sql
+
+public\login.css
+public\login.html
+public\login.js
+
+scripts\bootstrap-director.js
+
+src\app.js
+src\core\config\index.js
+src\core\database\disconnect-database.js
+src\core\database\prisma.js
+src\core\logging\logger.js
+src\core\session\session-store.js
+
+src\modules\auth\auth.constants.js
+src\modules\auth\auth.controller.js
+src\modules\auth\auth.middleware.js
+src\modules\auth\auth.routes.js
+src\modules\auth\auth.service.js
+src\modules\auth\password.js
+
+test\auth.controller.test.js
+test\auth.middleware.test.js
+test\auth.service.test.js
+
+
+NOTES
+-----
+- package-lock.json is not included because dependency installation could not
+  be completed inside the isolated Codex workspace. Running npm install in the
+  destination project will install Argon2 and connect-pg-simple and update the
+  lockfile.
+- Existing dashboard files public\index.html, public\app.js, and
+  public\styles.css are intentionally not included because PUL-006 preserves
+  them unchanged.
+- No credentials, password hashes, session IDs, patient data, or production
+  secrets are included in this package.

@@ -38,12 +38,25 @@ model User {
   email       String      @unique
   displayName String      @map("display_name")
   isActive    Boolean     @default(true) @map("is_active")
+  passwordHash String?    @map("password_hash")
+  lastLoginAt DateTime?   @map("last_login_at")
+  failedLoginAttempts Int @default(0) @map("failed_login_attempts")
+  lockedUntil DateTime?   @map("locked_until")
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
   roles       UserRole[]
   auditLogs   AuditLog[]  @relation("AuditLogActor")
 
   @@map("users")
+}
+
+model Session {
+  sid    String   @id @db.VarChar(255)
+  sess   Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire])
+  @@map("sessions")
 }
 
 model Role {
