@@ -2,9 +2,10 @@ import { prisma } from '../src/core/database/prisma.js';
 import { disconnectDatabase } from '../src/core/database/disconnect-database.js';
 
 const roles = [
-  {name: 'owner', description: 'Full ownership and administrative access.'},
-  {name: 'admin', description: 'Administrative access to Pulse operations.'},
-  {name: 'practitioner', description: 'Practitioner access to clinical workflows.'}
+  {name: 'DIRECTOR', description: 'Executive access across Pulse.'},
+  {name: 'PRACTICE_MANAGER', description: 'Practice management and operational access.'},
+  {name: 'ADMIN', description: 'Administrative access to Pulse operations.'},
+  {name: 'CLINICIAN', description: 'Clinical team access to Pulse workflows.'}
 ];
 
 const integrations = [

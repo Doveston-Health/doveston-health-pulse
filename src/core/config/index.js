@@ -10,6 +10,13 @@ const ENVIRONMENT = Object.freeze({
   logLevel: Object.freeze({name: 'LOG_LEVEL', defaultValue: 'info'}),
   trustProxy: Object.freeze({name: 'TRUST_PROXY', defaultValue: 'loopback'}),
   sessionSecret: Object.freeze({name: 'SESSION_SECRET', defaultValue: 'pulse-development-only-session-secret'}),
+  sessionName: Object.freeze({name: 'SESSION_NAME', defaultValue: 'pulse.sid'}),
+  sessionTtlHours: Object.freeze({name: 'SESSION_TTL_HOURS', defaultValue: '12'}),
+  authMaxFailedAttempts: Object.freeze({name: 'AUTH_MAX_FAILED_ATTEMPTS', defaultValue: '5'}),
+  authLockMinutes: Object.freeze({name: 'AUTH_LOCK_MINUTES', defaultValue: '15'}),
+  bootstrapAdminEmail: Object.freeze({name: 'BOOTSTRAP_ADMIN_EMAIL'}),
+  bootstrapAdminName: Object.freeze({name: 'BOOTSTRAP_ADMIN_NAME'}),
+  bootstrapAdminPassword: Object.freeze({name: 'BOOTSTRAP_ADMIN_PASSWORD'}),
   databaseUrl: Object.freeze({
     name: 'DATABASE_URL',
     defaultValue: 'postgresql://pulse:pulse-development-only@localhost:5432/pulse?schema=public'
@@ -45,6 +52,14 @@ function readPort() {
   return port;
 }
 
+function readPositiveInteger(setting) {
+  const value = Number(readString(setting));
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`${setting.name} must be a positive integer.`);
+  }
+  return value;
+}
+
 function readTrustProxy() {
   const value = readString(ENVIRONMENT.trustProxy);
   if (value === 'true') return true;
@@ -69,6 +84,21 @@ function loadConfig() {
     port = readPort();
   } catch (error) {
     errors.push(error.message);
+  }
+
+  let sessionTtlHours;
+  let authMaxFailedAttempts;
+  let authLockMinutes;
+  for (const [setting, assign] of [
+    [ENVIRONMENT.sessionTtlHours, (value) => { sessionTtlHours = value; }],
+    [ENVIRONMENT.authMaxFailedAttempts, (value) => { authMaxFailedAttempts = value; }],
+    [ENVIRONMENT.authLockMinutes, (value) => { authLockMinutes = value; }]
+  ]) {
+    try {
+      assign(readPositiveInteger(setting));
+    } catch (error) {
+      errors.push(error.message);
+    }
   }
 
   const configuredSessionSecret = readOptionalString(ENVIRONMENT.sessionSecret);
@@ -128,6 +158,19 @@ function loadConfig() {
       })
     }),
     sessionSecret,
+    session: Object.freeze({
+      name: readString(ENVIRONMENT.sessionName),
+      ttlMs: sessionTtlHours * 60 * 60 * 1000
+    }),
+    auth: Object.freeze({
+      maxFailedAttempts: authMaxFailedAttempts,
+      lockDurationMs: authLockMinutes * 60 * 1000
+    }),
+    bootstrap: Object.freeze({
+      email: readOptionalString(ENVIRONMENT.bootstrapAdminEmail),
+      name: readOptionalString(ENVIRONMENT.bootstrapAdminName),
+      password: readOptionalString(ENVIRONMENT.bootstrapAdminPassword)
+    }),
     database: Object.freeze({
       url: databaseUrl
     }),

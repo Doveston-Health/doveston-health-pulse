@@ -1,9 +1,16 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+import pg from 'pg';
 import { config } from '../config/index.js';
 import { logger } from '../logging/logger.js';
 
-const adapter = new PrismaPg(config.database.url);
+export const databasePool = new pg.Pool({
+  connectionString: config.database.url
+});
+databasePool.on('error', (error) => {
+  logger.error({err: error}, 'database pool error');
+});
+const adapter = new PrismaPg(databasePool);
 
 export const prisma = new PrismaClient({adapter});
 

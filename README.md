@@ -14,6 +14,7 @@ Pulse is Doveston Health's clinic operations and intelligence platform. This rep
 - Light and dark appearance
 - Express server scaffold
 - PostgreSQL and Prisma persistence foundation
+- Staff authentication and role-based access control
 - Cliniko API health/practitioner endpoint scaffold
 - Xero OAuth connection scaffold
 
@@ -77,6 +78,8 @@ npm run dev
 
 6. Open `http://localhost:3000`.
 
+7. Sign in with a bootstrapped staff account. Pulse has no public registration flow.
+
 Development defaults to port `3000`, PostgreSQL on `localhost:5432`, and development-only database and session credentials. Never use those defaults outside local development.
 
 ## Production-style start
@@ -116,6 +119,11 @@ The application loads local values from `.env`. Environment variables already su
 - `LOG_LEVEL`: Pino log level; defaults to `info`.
 - `TRUST_PROXY`: Express proxy trust setting; defaults to `loopback`.
 - `SESSION_SECRET`: required in production; optional for local development.
+- `SESSION_NAME`: session-cookie name; defaults to `pulse.sid`.
+- `SESSION_TTL_HOURS`: rolling server-side session and cookie lifetime; defaults to `12`.
+- `AUTH_MAX_FAILED_ATTEMPTS`: failed attempts before temporary account lock; defaults to `5`.
+- `AUTH_LOCK_MINUTES`: temporary account-lock duration; defaults to `15`.
+- `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME`, and `BOOTSTRAP_ADMIN_PASSWORD`: used only by `npm run user:bootstrap`.
 - `DATABASE_URL`: PostgreSQL connection URL used by the application and Prisma; defaults to the local Compose database in development.
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and `POSTGRES_PORT`: configure the local Compose service. Keep them aligned with `DATABASE_URL`.
 - `CLINIKO_ENABLED`: `true` or `false`. If omitted, Cliniko is enabled when `CLINIKO_API_KEY` is present.
@@ -129,6 +137,10 @@ The application loads local values from `.env`. Environment variables already su
 
 - `GET /api/health` reports service status, uptime, version, environment and configured integrations.
 - `GET /api/ready` returns HTTP `200` while the process and database are ready. It returns HTTP `503` during startup, shutdown, or a database outage and includes `databaseReady`.
+- `GET /healthz` is the unauthenticated Render-compatible liveness endpoint.
+- `GET /api/auth/me` returns the authenticated staff user and assigned roles.
+
+All dashboard and normal application routes require authentication. Unauthenticated browser requests redirect to `/login`; unauthenticated API requests return HTTP `401`. The login, health, and readiness routes remain public.
 
 Every request receives an `X-Request-ID` response header and produces a structured JSON completion log. API routes are rate limited to 100 requests per minute per client by default.
 
@@ -147,6 +159,7 @@ src/
     middleware/                  Global HTTP middleware
     server/graceful-shutdown.js  Process lifecycle handling
   modules/
+    auth/                        Authentication, account security and RBAC
     system/                      Health and readiness module
     integrations/                Existing Cliniko and Xero route scaffolds
   shared/
@@ -177,6 +190,67 @@ Database commands:
 > **Warning:** `npm run db:reset` destroys all data in the configured database. Use it only against a disposable local development database.
 
 The seed contains only role definitions and unconfigured integration records. It contains no credentials, patients, or production data. `IntegrationCredential.encryptedValue` is a storage placeholder for a future encryption implementation; do not store plaintext secrets there.
+
+## Authentication setup
+
+Apply migrations and seed the baseline roles before creating the first account:
+
+```bash
+npm run db:migrate:deploy
+npm run db:seed
+```
+
+The seeded roles are:
+
+- `DIRECTOR`
+- `PRACTICE_MANAGER`
+- `ADMIN`
+- `CLINICIAN`
+
+Create the initial Director explicitly; this command is never run during normal startup or deployment.
+
+Windows PowerShell:
+
+```powershell
+$env:BOOTSTRAP_ADMIN_EMAIL = 'director@example.com'
+$env:BOOTSTRAP_ADMIN_NAME = 'Director Name'
+$env:BOOTSTRAP_ADMIN_PASSWORD = '<strong-unique-password>'
+npm run user:bootstrap
+```
+
+Windows Command Prompt:
+
+```bat
+set BOOTSTRAP_ADMIN_EMAIL=director@example.com
+set BOOTSTRAP_ADMIN_NAME=Director Name
+set BOOTSTRAP_ADMIN_PASSWORD=<strong-unique-password>
+npm run user:bootstrap
+```
+
+macOS or Linux:
+
+```bash
+BOOTSTRAP_ADMIN_EMAIL='director@example.com' \
+BOOTSTRAP_ADMIN_NAME='Director Name' \
+BOOTSTRAP_ADMIN_PASSWORD='<strong-unique-password>' \
+npm run user:bootstrap
+```
+
+The password must be at least 12 characters and contain uppercase, lowercase, numeric, and symbol characters. It is Argon2id-hashed before storage and is never printed. The command fails safely when the normalized email already exists.
+
+For local testing, start PostgreSQL, apply migrations, seed roles, bootstrap a Director, start Pulse, and visit `http://localhost:3000/login`. Verify logout using the authenticated session and inspect authentication audit records through Prisma Studio if needed.
+
+## Render deployment
+
+1. Provision a managed PostgreSQL database and set its private `DATABASE_URL`.
+2. Set a long random `SESSION_SECRET`, `NODE_ENV=production`, and the required existing integration configuration.
+3. Use `npm install` as the build command and `npm start` as the start command.
+4. Run `npm run db:migrate:deploy` as the release/pre-deploy command.
+5. Configure `/healthz` as the liveness path and `/api/ready` as the readiness path.
+6. Run `npm run db:seed` once for baseline roles.
+7. Supply the three bootstrap variables temporarily, run `npm run user:bootstrap` once, then remove the bootstrap password from the service environment.
+
+PostgreSQL-backed sessions survive application restarts. They do not survive database replacement or session-table deletion. Secure cookies require HTTPS in production; ensure Render terminates TLS and Express proxy trust remains correctly configured.
 
 ### Database troubleshooting
 

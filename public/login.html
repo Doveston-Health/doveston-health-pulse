@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#071a33">
+  <title>Sign in — Pulse by Doveston Health</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/login.css">
+</head>
+<body>
+  <main class="login-shell">
+    <section class="login-brand" aria-labelledby="brand-heading">
+      <div class="brand-lockup">
+        <div class="brand-mark" aria-hidden="true">P</div>
+        <div><strong>Pulse</strong><span>by Doveston Health</span></div>
+      </div>
+      <div class="brand-message">
+        <p class="eyebrow">Clinic intelligence</p>
+        <h1 id="brand-heading">Always keep your finger on the pulse.</h1>
+        <p>Secure access for the Doveston Health team.</p>
+      </div>
+    </section>
+
+    <section class="login-panel" aria-labelledby="login-heading">
+      <div class="login-card">
+        <p class="eyebrow">Welcome back</p>
+        <h2 id="login-heading">Sign in to Pulse</h2>
+        <p class="intro">Use your Doveston Health staff account.</p>
+
+        <div class="alert" id="loginError" role="alert" hidden>Invalid email or password.</div>
+
+        <form action="/login" method="post">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="username" inputmode="email" required autofocus>
+
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+          <button type="submit">Sign in</button>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script src="/login.js" defer></script>
+</body>
+</html>
