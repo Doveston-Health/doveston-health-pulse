@@ -12,12 +12,16 @@
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:check": "prisma migrate status",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "user:bootstrap": "node scripts/bootstrap-director.js",
-    "test": "node --test"
+    "test": "node --test",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "quality": "npm run lint && npm test"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",
@@ -35,6 +39,8 @@
     "pg": "^8.16.3"
   },
   "devDependencies": {
+    "eslint": "^9.39.4",
+    "globals": "^17.7.0",
     "prisma": "^7.0.0"
   },
   "overrides": {

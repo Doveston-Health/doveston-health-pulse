@@ -2,7 +2,15 @@ import { Router } from 'express';
 import { asyncHandler } from '../../shared/http/async-handler.js';
 import { getHealth, getReadiness } from './system.controller.js';
 
-export const systemRouter = Router();
+export function createSystemRouter({
+  healthHandler = getHealth,
+  readinessHandler = getReadiness
+} = {}) {
+  const router = Router();
 
-systemRouter.get('/health', getHealth);
-systemRouter.get('/ready', asyncHandler(getReadiness));
+  router.get('/health', healthHandler);
+  router.get('/ready', asyncHandler(readinessHandler));
+  return router;
+}
+
+export const systemRouter = createSystemRouter();

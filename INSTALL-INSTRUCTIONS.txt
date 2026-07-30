@@ -1,58 +1,121 @@
-PUL-007 DOCUMENTATION PACKAGE
-=============================
+PUL-008 AUTOMATED QUALITY FOUNDATION
+====================================
 
-Purpose
--------
-This ZIP contains the complete PUL-007 documentation-only change set.
-It does not contain application code, dependencies, database migrations,
-authentication changes, routes, or runtime configuration.
+Required branch
+---------------
+feature/pul-008-automated-quality-foundation
 
-Installation
-------------
-1. Close any editor that may be changing README.md.
-2. Make a backup of your repository, or confirm your work is committed.
+Package purpose
+---------------
+This ZIP contains only files added or changed for PUL-008. It adds ESLint,
+automated contract tests, non-destructive Prisma migration validation,
+Gitleaks credential scanning, GitHub Actions CI and quality documentation.
+
+Installation on Windows 11
+--------------------------
+1. Confirm the repository is on the required branch:
+
+   git branch --show-current
+
+2. Commit or back up any existing local work.
 3. Extract this ZIP.
-4. Copy README.md to the root of the doveston-health-pulse repository,
-   replacing the existing README.md.
-5. Copy docs\MASTER-PROJECT-BRIEF.md to the repository's docs folder.
-   Create the docs folder if it does not already exist.
-6. Review the two files with:
+4. Copy its contents into the root of the doveston-health-pulse repository.
+   Preserve the included folders and allow the listed files to replace the
+   existing versions.
+5. Do not copy a .env file, database data or node_modules from elsewhere.
+6. Install the exact dependency tree:
 
-   git diff -- README.md docs/MASTER-PROJECT-BRIEF.md
+   npm.cmd install
 
-7. Confirm no other project files changed with:
+   After package-lock.json has been accepted, npm.cmd ci may be used for a
+   clean, lockfile-driven installation.
 
-   git status --short
+Do not change, bypass or relax PowerShell execution policy. Use npm.cmd
+instead of npm and npx.cmd instead of npx on Windows.
 
-Expected project changes
-------------------------
+Verification on Windows
+-----------------------
+Run these commands one at a time:
+
+   npm.cmd run lint
+   npm.cmd test
+   npm.cmd run quality
+   npm.cmd run db:generate
+   npm.cmd run db:migrate:check
+
+The migration-status command uses the DATABASE_URL in the local environment.
+It is non-destructive. Do not run db:reset for PUL-008 verification.
+
+For local application verification, start the normal development service:
+
+   npm.cmd run dev
+
+Then manually confirm:
+
+* login works;
+* the Director dashboard loads;
+* logout works;
+* unauthenticated protected access remains blocked;
+* /api/health works;
+* /api/ready works; and
+* /healthz works.
+
+Do not use production-mode startup for local authentication testing.
+
+GitHub verification
+-------------------
+After the branch is pushed and a Pull Request is opened, GitHub Actions runs
+the workflow in .github\workflows\quality.yml. The stable check name is:
+
+   PUL-008 quality workflow
+
+The workflow installs with npm ci, lints, tests, generates Prisma Client,
+deploys migrations to an isolated PostgreSQL 16 database, validates migration
+status and scans repository history with Gitleaks.
+
+A repository administrator must configure branch protection for main to
+require "PUL-008 quality workflow" before merge. The workflow cannot enable
+that repository setting. Do not claim it is enabled until GitHub shows the
+rule and a successful workflow run.
+
+Files added
+-----------
+.github\workflows\quality.yml
+eslint.config.js
+test\route-contract.test.js
+
+Files changed
+-------------
+package.json
+package-lock.json
 README.md
-  - Adds a link to the canonical Master Project Brief.
-  - Clarifies the fictional-data warning and current limitations to reflect
-    the authentication and RBAC foundation already present.
-  - Documents the required Windows npm.cmd and npx.cmd conventions,
-    including npm.cmd run dev without PowerShell policy changes.
-
-docs\MASTER-PROJECT-BRIEF.md
-  - Adds dedicated completed records for PUL-001 through PUL-006.
-  - Adds complete milestone entries for PUL-007 through PUL-040.
-  - Adds the full module roadmap and dedicated AI capability roadmap.
-  - Records the approved ChatGPT-to-merge development workflow.
-  - Preserves product, architecture, security, privacy, governance, risk
-    and release-gate guidance.
-
-Package-only file
------------------
 INSTALL-INSTRUCTIONS.txt
-  - This installation manifest is not a project source file and does not
-    need to be copied into the repository.
+docs\MASTER-PROJECT-BRIEF.md
+src\modules\auth\auth.routes.js
+src\modules\system\system.controller.js
+src\modules\system\system.routes.js
 
-Verification
+Small testability changes
+-------------------------
+The authentication router, system router and readiness controller now expose
+dependency-injected factory functions. Their existing production exports use
+the same original handlers and middleware, so runtime routes and contracts do
+not change. Tests use the factories with in-memory sessions and stubbed health
+and authentication dependencies; they do not use the clinic database.
+
+Dependencies
 ------------
-Because PUL-007 changes documentation only, no npm installation, database
-migration, application startup, authentication, route, dependency or
-runtime behaviour change is required by this package.
+Development dependency added:
 
-On Windows, any optional documentation verification command that invokes
-npm or npx must use npm.cmd or npx.cmd. Do not change PowerShell execution
-policy. The standard local-development command is npm.cmd run dev.
+* eslint
+* globals (ESLint environment definitions)
+
+No production runtime dependency is added. Node's built-in test runner and
+HTTP client are used; no large testing framework is introduced.
+
+Safety
+------
+The package contains no real credentials, .env file, patient information,
+database data or generated runtime secret. It does not change authentication
+rules, database models, migrations, public response contracts or application
+features.
