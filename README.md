@@ -276,6 +276,41 @@ The password must be at least 12 characters and contain uppercase, lowercase, nu
 
 For local testing, start PostgreSQL, apply migrations, seed roles, bootstrap a Director, start Pulse, and visit `http://localhost:3000/login`. Verify logout using the authenticated session and inspect authentication audit records through Prisma Studio if needed.
 
+## Quality checks
+
+PUL-008 adds ESLint, isolated route-contract tests, Prisma migration validation and repository credential scanning. GitHub Actions runs the complete quality workflow for every Pull Request and every push to `main`.
+
+Run each Windows command separately in PowerShell or Command Prompt:
+
+```powershell
+npm.cmd run lint
+npm.cmd test
+npm.cmd run quality
+npm.cmd run db:generate
+npm.cmd run db:migrate:check
+```
+
+Use `npm.cmd run dev` for local application testing. Do not use production-mode startup to test local authentication, and do not change PowerShell execution policy. If an npm package executable must be invoked directly on Windows, use `npx.cmd` rather than `npx`.
+
+Equivalent macOS and Linux commands:
+
+```bash
+npm run lint
+npm test
+npm run quality
+npm run db:generate
+npm run db:migrate:check
+```
+
+- `lint` checks modern Node.js, browser, script, Prisma-configuration and test JavaScript for genuine errors.
+- `test` protects authentication, authorization, health, readiness, liveness, security-header and API error contracts without using the local clinic database or live integrations.
+- `quality` runs linting followed by automated tests. It does not start the application, reset a database or perform another destructive operation.
+- `db:migrate:check` reports Prisma migration health for the configured database.
+- GitHub Actions uses a clean PostgreSQL 16 service to generate Prisma Client, deploy committed migrations and validate migration status.
+- Gitleaks scans repository history for accidentally committed credentials.
+
+The stable GitHub Actions check name is `PUL-008 quality workflow`. Repository administrators must configure branch protection for `main` to require that check before merge. This repository setting is manual and must not be treated as enabled until it has been configured and verified in GitHub.
+
 ## Render deployment
 
 1. Provision a managed PostgreSQL database and set its private `DATABASE_URL`.

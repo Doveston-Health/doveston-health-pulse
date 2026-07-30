@@ -4,8 +4,6 @@ import { asyncHandler } from '../../shared/http/async-handler.js';
 import { getCurrentUser, getLogin, getLoginScript, getLoginStyles, login, logout } from './auth.controller.js';
 import { requireAuthentication } from './auth.middleware.js';
 
-export const authRouter = Router();
-
 const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -22,9 +20,22 @@ const loginRateLimiter = rateLimit({
   }
 });
 
-authRouter.get('/login', getLogin);
-authRouter.get('/login.css', getLoginStyles);
-authRouter.get('/login.js', getLoginScript);
-authRouter.post('/login', loginRateLimiter, asyncHandler(login));
-authRouter.post('/logout', requireAuthentication, asyncHandler(logout));
-authRouter.get('/api/auth/me', requireAuthentication, getCurrentUser);
+export function createAuthRouter({
+  loginHandler = login,
+  logoutHandler = logout,
+  currentUserHandler = getCurrentUser,
+  authenticationRequired = requireAuthentication,
+  rateLimiter = loginRateLimiter
+} = {}) {
+  const router = Router();
+
+  router.get('/login', getLogin);
+  router.get('/login.css', getLoginStyles);
+  router.get('/login.js', getLoginScript);
+  router.post('/login', rateLimiter, asyncHandler(loginHandler));
+  router.post('/logout', authenticationRequired, asyncHandler(logoutHandler));
+  router.get('/api/auth/me', authenticationRequired, currentUserHandler);
+  return router;
+}
+
+export const authRouter = createAuthRouter();

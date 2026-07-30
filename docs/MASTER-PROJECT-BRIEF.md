@@ -473,9 +473,10 @@ Every future milestone is a discrete, reviewable delivery unit. A milestone may 
 - **Milestone number:** PUL-008
 - **Name:** Automated testing and CI quality gates
 - **Objective:** Protect established behaviour before feature expansion.
-- **Main features:** Unit, integration and route-contract tests; linting; migration checks; credential scanning; CI workflow.
+- **Main features:** ESLint flat configuration; expanded unit and isolated route-contract testing for health, readiness, liveness, authentication, authorization, security headers and errors; Prisma generation and clean-database migration validation; Gitleaks credential scanning; GitHub Actions CI on Pull Requests and pushes to `main`.
 - **Dependencies:** PUL-001–PUL-007.
-- **Acceptance criteria:** Critical health, readiness, authentication and authorization paths run automatically; failed checks block merge; no runtime contract changes.
+- **Acceptance criteria:** Local lint, test and combined quality commands pass; committed migrations deploy to clean PostgreSQL in CI; credential findings fail CI; the stable `PUL-008 quality workflow` check is configured by a repository administrator as required for `main`; no runtime route, authentication or database-model contracts change.
+- **Status:** Implemented for local review; not complete or merged until local verification, the first GitHub Actions run and required-status-check configuration are verified.
 
 ### PUL-009 — Reception workspace
 
