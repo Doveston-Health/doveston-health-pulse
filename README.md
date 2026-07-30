@@ -4,6 +4,10 @@
 
 Pulse is Doveston Health's clinic operations and intelligence platform. This repository currently contains a responsive, demonstration-only Team Preview with an Executive Pulse homepage and interactive Referral Hub.
 
+## Project brief
+
+The [Master Project Brief](docs/MASTER-PROJECT-BRIEF.md) is the canonical product and delivery reference for Pulse. It defines the product vision, current baseline, scope boundaries, architecture principles, security expectations and staged roadmap. Update the brief through normal code review whenever an approved product or architecture decision changes.
+
 ## Included in v0.2
 
 - Responsive application shell and workspace navigation
@@ -20,7 +24,7 @@ Pulse is Doveston Health's clinic operations and intelligence platform. This rep
 
 ## Important data notice
 
-All patient, referrer and performance information in this preview is fictional demonstration data. Do not add genuine patient information until authentication, permissions, encrypted storage, audit logging and appropriate production hosting are implemented.
+All patient, referrer and performance information in this preview is fictional demonstration data. Staff authentication and baseline role-based access control are implemented, but the preview is not approved for real patient information. Do not add genuine patient information until encrypted storage, operational audit coverage, privacy controls and appropriate production hosting have been implemented and formally approved.
 
 ## Requirements
 
@@ -30,7 +34,15 @@ All patient, referrer and performance information in this preview is fictional d
 
 ## Local development
 
-1. Open a terminal in this project folder and install dependencies:
+1. Open a terminal in this project folder and install dependencies.
+
+Windows PowerShell or Command Prompt:
+
+```powershell
+npm.cmd install
+```
+
+macOS or Linux:
 
 ```bash
 npm install
@@ -63,14 +75,31 @@ docker compose up -d postgres
 docker compose ps
 ```
 
-4. Apply the committed migrations and seed the non-sensitive baseline data:
+4. Apply the committed migrations and seed the non-sensitive baseline data.
+
+Windows PowerShell or Command Prompt:
+
+```powershell
+npm.cmd run db:migrate:deploy
+npm.cmd run db:seed
+```
+
+macOS or Linux:
 
 ```bash
 npm run db:migrate:deploy
 npm run db:seed
 ```
 
-5. Start the development server:
+5. Start the development server.
+
+Windows PowerShell or Command Prompt:
+
+```powershell
+npm.cmd run dev
+```
+
+macOS or Linux:
 
 ```bash
 npm run dev
@@ -84,14 +113,14 @@ Development defaults to port `3000`, PostgreSQL on `localhost:5432`, and develop
 
 ## Production-style start
 
-`npm start` works consistently on Windows, macOS and Linux and sets `NODE_ENV=production` when it has not already been provided. Production startup requires a non-empty `SESSION_SECRET` and a production `DATABASE_URL`. Set secrets through the hosting platform rather than committing them:
+The start workflow is cross-platform and sets `NODE_ENV=production` when it has not already been provided. On Windows, invoke npm as `npm.cmd`; on macOS or Linux, use `npm`. Production startup requires a non-empty `SESSION_SECRET` and a production `DATABASE_URL`. Set secrets through the hosting platform rather than committing them:
 
 Windows PowerShell:
 
 ```powershell
 $env:SESSION_SECRET = '<generate-a-long-random-secret>'
 $env:DATABASE_URL = '<managed-postgresql-url>'
-npm start
+npm.cmd start
 ```
 
 Windows Command Prompt:
@@ -99,7 +128,7 @@ Windows Command Prompt:
 ```bat
 set SESSION_SECRET=<generate-a-long-random-secret>
 set DATABASE_URL=<managed-postgresql-url>
-npm start
+npm.cmd start
 ```
 
 macOS or Linux:
@@ -108,7 +137,14 @@ macOS or Linux:
 SESSION_SECRET='<generate-a-long-random-secret>' DATABASE_URL='<managed-postgresql-url>' npm start
 ```
 
-Before production startup, apply migrations with `npm run db:migrate:deploy`.
+Before production startup, apply migrations with `npm.cmd run db:migrate:deploy` on Windows or `npm run db:migrate:deploy` on macOS and Linux.
+
+## Windows command requirements
+
+- Use `npm.cmd` instead of `npm`.
+- Use `npx.cmd` instead of `npx`.
+- Use `npm.cmd run dev` for local development.
+- Do not change or bypass PowerShell execution policy. The `.cmd` entry points work without an execution-policy change.
 
 ## Environment variables
 
@@ -215,7 +251,7 @@ Windows PowerShell:
 $env:BOOTSTRAP_ADMIN_EMAIL = 'director@example.com'
 $env:BOOTSTRAP_ADMIN_NAME = 'Director Name'
 $env:BOOTSTRAP_ADMIN_PASSWORD = '<strong-unique-password>'
-npm run user:bootstrap
+npm.cmd run user:bootstrap
 ```
 
 Windows Command Prompt:
@@ -224,7 +260,7 @@ Windows Command Prompt:
 set BOOTSTRAP_ADMIN_EMAIL=director@example.com
 set BOOTSTRAP_ADMIN_NAME=Director Name
 set BOOTSTRAP_ADMIN_PASSWORD=<strong-unique-password>
-npm run user:bootstrap
+npm.cmd run user:bootstrap
 ```
 
 macOS or Linux:
@@ -266,4 +302,4 @@ The `public` directory can be deployed as a static preview. The Express server w
 
 ## Current limitations
 
-This is not yet a production clinical system. Live patient documents, referral file uploads, Cliniko synchronisation, Xero data, authentication, permissions, credential encryption and populated audit history are future development stages.
+This is not yet a production clinical system. Live patient documents, referral file uploads, Cliniko synchronisation, Xero data, credential encryption, fine-grained authorization administration and populated operational audit history are future development stages.
