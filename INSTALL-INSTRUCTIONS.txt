@@ -1,96 +1,58 @@
-PUL-006 — AUTHENTICATION AND ROLE-BASED ACCESS CONTROL
-======================================================
+PUL-007 DOCUMENTATION PACKAGE
+=============================
 
-IMPORTANT
----------
-Back up your project before installing these files.
-This package must be installed into the Doveston Health Pulse project on branch:
+Purpose
+-------
+This ZIP contains the complete PUL-007 documentation-only change set.
+It does not contain application code, dependencies, database migrations,
+authentication changes, routes, or runtime configuration.
 
-feature/pul-006-authentication-rbac
+Installation
+------------
+1. Close any editor that may be changing README.md.
+2. Make a backup of your repository, or confirm your work is committed.
+3. Extract this ZIP.
+4. Copy README.md to the root of the doveston-health-pulse repository,
+   replacing the existing README.md.
+5. Copy docs\MASTER-PROJECT-BRIEF.md to the repository's docs folder.
+   Create the docs folder if it does not already exist.
+6. Review the two files with:
 
-The ZIP contains only files added or changed for PUL-006. It is not a complete
-copy of the project.
+   git diff -- README.md docs/MASTER-PROJECT-BRIEF.md
 
+7. Confirm no other project files changed with:
 
-HOW TO INSTALL
---------------
-1. Close the running Pulse application.
-2. Open the root folder of the doveston-health-pulse project. This is the folder
-   that already contains package.json, README.md, public, prisma, and src.
-3. Extract the contents of this ZIP directly into that project root.
-4. Allow Windows or your archive program to merge folders and replace existing
-   files when prompted.
-5. Open a terminal in the project root and run:
+   git status --short
 
-   npm install
-   npx prisma generate
-   npm run db:migrate:deploy
-   npm run db:seed
-   npm test
-
-6. Copy the new settings from .env.example into your local .env as appropriate.
-   Do not commit real passwords or secrets.
-7. Create the initial Director account by setting:
-
-   BOOTSTRAP_ADMIN_EMAIL
-   BOOTSTRAP_ADMIN_NAME
-   BOOTSTRAP_ADMIN_PASSWORD
-
-   Then run:
-
-   npm run user:bootstrap
-
-8. Start Pulse and open /login:
-
-   npm start
-
-
-FILE LOCATIONS
---------------
-Each line below is relative to the project root. Keep every file at exactly the
-listed location.
-
-.env.example
+Expected project changes
+------------------------
 README.md
-package.json
+  - Adds a link to the canonical Master Project Brief.
+  - Clarifies the fictional-data warning and current limitations to reflect
+    the authentication and RBAC foundation already present.
+  - Documents the required Windows npm.cmd and npx.cmd conventions,
+    including npm.cmd run dev without PowerShell policy changes.
 
-prisma\schema.prisma
-prisma\seed.js
-prisma\migrations\20260728000000_authentication_rbac\migration.sql
+docs\MASTER-PROJECT-BRIEF.md
+  - Adds dedicated completed records for PUL-001 through PUL-006.
+  - Adds complete milestone entries for PUL-007 through PUL-040.
+  - Adds the full module roadmap and dedicated AI capability roadmap.
+  - Records the approved ChatGPT-to-merge development workflow.
+  - Preserves product, architecture, security, privacy, governance, risk
+    and release-gate guidance.
 
-public\login.css
-public\login.html
-public\login.js
+Package-only file
+-----------------
+INSTALL-INSTRUCTIONS.txt
+  - This installation manifest is not a project source file and does not
+    need to be copied into the repository.
 
-scripts\bootstrap-director.js
+Verification
+------------
+Because PUL-007 changes documentation only, no npm installation, database
+migration, application startup, authentication, route, dependency or
+runtime behaviour change is required by this package.
 
-src\app.js
-src\core\config\index.js
-src\core\database\disconnect-database.js
-src\core\database\prisma.js
-src\core\logging\logger.js
-src\core\session\session-store.js
-
-src\modules\auth\auth.constants.js
-src\modules\auth\auth.controller.js
-src\modules\auth\auth.middleware.js
-src\modules\auth\auth.routes.js
-src\modules\auth\auth.service.js
-src\modules\auth\password.js
-
-test\auth.controller.test.js
-test\auth.middleware.test.js
-test\auth.service.test.js
-
-
-NOTES
------
-- package-lock.json is not included because dependency installation could not
-  be completed inside the isolated Codex workspace. Running npm install in the
-  destination project will install Argon2 and connect-pg-simple and update the
-  lockfile.
-- Existing dashboard files public\index.html, public\app.js, and
-  public\styles.css are intentionally not included because PUL-006 preserves
-  them unchanged.
-- No credentials, password hashes, session IDs, patient data, or production
-  secrets are included in this package.
+On Windows, any optional documentation verification command that invokes
+npm or npx must use npm.cmd or npx.cmd. Do not change PowerShell execution
+policy. The standard local-development command is npm.cmd run dev.
