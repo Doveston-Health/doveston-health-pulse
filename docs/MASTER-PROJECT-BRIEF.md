@@ -478,32 +478,35 @@ Every future milestone is a discrete, reviewable delivery unit. A milestone may 
 - **Acceptance criteria:** Local lint, test and combined quality commands pass; committed migrations deploy to clean PostgreSQL in CI; credential findings fail CI; the stable `PUL-008 quality workflow` check is configured by a repository administrator as required for `main`; no runtime route, authentication or database-model contracts change.
 - **Status:** Implemented for local review; not complete or merged until local verification, the first GitHub Actions run and required-status-check configuration are verified.
 
-### PUL-009 — Reception workspace
+### PUL-009 — Cliniko read-only integration and initial sync
 
 - **Milestone number:** PUL-009
-- **Name:** Reception operations
-- **Objective:** Give reception staff one governed queue for daily administrative work.
-- **Main features:** Arrival and contact queue; priority flags; assignment; reception notes; role-scoped views.
-- **Dependencies:** PUL-006, PUL-008 and approved patient-data controls.
-- **Acceptance criteria:** Authorized reception users can safely action a tested fictional workflow; unauthorized roles are denied; actions are audited.
+- **Name:** Cliniko read-only integration and initial sync
+- **Objective:** Establish Cliniko as the authoritative operational source through a governed, read-only and source-attributed local projection.
+- **Main features:** Safe connection test; HTTPS client and pagination; bounded rate-limit retry; minimum-data business, practitioner, patient and booking sync; idempotent persistence; multi-patient booking relationships; audit, status, counts, sync history and management UI.
+- **Dependencies:** PUL-004, PUL-006 and PUL-008 plus approved Cliniko credentials and data-minimisation rules.
+- **Acceptance criteria:** Directors and Practice Managers can test and run one non-overlapping read-only sync; failures are sanitised; no clinical/free-text fields, credentials or raw upstream bodies are persisted or returned; all quality and migration checks pass.
+- **Status:** Implemented for review; not completed until local verification and merge.
 
-### PUL-010 — Scheduling
+### PUL-010 — Live reception and scheduling
 
 - **Milestone number:** PUL-010
-- **Name:** Scheduling and diary operations
-- **Objective:** Provide operational visibility over appointments and capacity without replacing the source diary.
-- **Main features:** Diary views; availability; waitlist; appointment status; exceptions; source attribution.
+- **Name:** Live reception and scheduling using Cliniko data
+- **Objective:** Give reception a governed operational queue and diary using the PUL-009 local Cliniko projection.
+- **Main features:** Arrivals; contact and priority queues; diary views; availability; waitlist; appointment status; exceptions; assignments; source freshness.
 - **Dependencies:** PUL-009 and approved Cliniko contract.
-- **Acceptance criteria:** Scheduling data is traceable to its source; stale data is identified; permissions and failure modes are tested.
+- **Acceptance criteria:** Authorized reception workflows use source-attributed data; stale data is identified; role, privacy and failure paths are tested.
 
-### PUL-011 — Patients
+### PUL-011 — Xero read-only integration
 
 - **Milestone number:** PUL-011
-- **Name:** Patient workspace
-- **Objective:** Present the minimum approved patient context for operational workflows.
-- **Main features:** Patient search; profile summary; contact context; alerts; consent and provenance indicators.
-- **Dependencies:** PUL-008–PUL-010, privacy impact assessment and data classification.
-- **Acceptance criteria:** Minimum-data views are role-restricted, audited and tested; retention and deletion rules are documented; no clinical system replacement.
+- **Name:** Xero read-only integration and finance snapshot
+- **Objective:** Establish a governed, read-only financial projection while preserving Xero as the accounting source of truth.
+- **Main features:** OAuth/token lifecycle; encrypted credential storage; tenant selection; read-only finance snapshot; sync status; reconciliation.
+- **Dependencies:** PUL-009, approved Xero scopes and production credential encryption.
+- **Acceptance criteria:** Restricted financial views reconcile to approved Xero samples; credentials are encrypted; no unauthorized accounting writes occur.
+
+The original PUL-011 patient-workspace identity is retained historically in the PUL-007 brief. The approved resequencing assigns PUL-011 to Xero; later milestones retain their existing identities unless a separately approved roadmap revision explicitly moves the displaced patient workspace. This exception avoids silently renumbering PUL-012–PUL-040.
 
 ### PUL-012 — Practitioners
 

@@ -1,41 +1,58 @@
-PUL-008 AUTOMATED QUALITY FOUNDATION
-====================================
+PUL-009 CLINIKO READ-ONLY INTEGRATION AND INITIAL SYNC
+======================================================
 
 Required branch
 ---------------
-feature/pul-008-automated-quality-foundation
+feature/pul-009-cliniko-read-only-integration
 
-Package purpose
----------------
-This ZIP contains only files added or changed for PUL-008. It adds ESLint,
-automated contract tests, non-destructive Prisma migration validation,
-Gitleaks credential scanning, GitHub Actions CI and quality documentation.
-
-Installation on Windows 11
---------------------------
-1. Confirm the repository is on the required branch:
+Installation
+------------
+1. Confirm and review the branch before extracting:
 
    git branch --show-current
+   git status --short
+   git diff --stat
 
-2. Commit or back up any existing local work.
-3. Extract this ZIP.
-4. Copy its contents into the root of the doveston-health-pulse repository.
-   Preserve the included folders and allow the listed files to replace the
-   existing versions.
-5. Do not copy a .env file, database data or node_modules from elsewhere.
-6. Install the exact dependency tree:
+2. Commit or back up unrelated local work.
+3. Extract the ZIP into the repository root, preserving folders and replacing
+   only the files listed in the manifest below.
+4. Install dependencies:
 
    npm.cmd install
 
-   After package-lock.json has been accepted, npm.cmd ci may be used for a
-   clean, lockfile-driven installation.
+5. Start local PostgreSQL and confirm it is healthy:
 
-Do not change, bypass or relax PowerShell execution policy. Use npm.cmd
-instead of npm and npx.cmd instead of npx on Windows.
+   docker compose up -d postgres
+   docker compose ps
 
-Verification on Windows
------------------------
-Run these commands one at a time:
+6. Create a development migration from the supplied schema only if reviewing
+   the migration interactively; otherwise apply the committed migration:
+
+   npm.cmd run db:migrate:deploy
+
+7. Generate Prisma Client and seed the baseline integration records:
+
+   npm.cmd run db:generate
+   npm.cmd run db:seed
+
+Local Cliniko configuration
+---------------------------
+Edit .env in an editor. Do not echo or print the real API key in terminal
+output, shell history, screenshots, logs or support messages.
+
+Use:
+
+CLINIKO_ENABLED=true
+CLINIKO_BASE_URL=https://api.au4.cliniko.com/v1
+CLINIKO_API_KEY=replace-with-real-cliniko-api-key
+CLINIKO_USER_AGENT=Doveston Health Pulse (support@example.com)
+
+Replace the key placeholder locally and use a genuine monitored contact email
+in the User-Agent. Never commit .env.
+
+Automated verification
+----------------------
+Run each Windows PowerShell command separately:
 
    npm.cmd run lint
    npm.cmd test
@@ -43,79 +60,82 @@ Run these commands one at a time:
    npm.cmd run db:generate
    npm.cmd run db:migrate:check
 
-The migration-status command uses the DATABASE_URL in the local environment.
-It is non-destructive. Do not run db:reset for PUL-008 verification.
+Do not change or bypass PowerShell execution policy. Use npm.cmd instead of
+npm and npx.cmd instead of npx.
 
-For local application verification, start the normal development service:
+Manual verification
+-------------------
+1. Start Pulse in development mode:
 
    npm.cmd run dev
 
-Then manually confirm:
+2. Sign in as a Director or Practice Manager.
+3. Open Settings and confirm the Cliniko panel states:
 
-* login works;
-* the Director dashboard loads;
-* logout works;
-* unauthenticated protected access remains blocked;
-* /api/health works;
-* /api/ready works; and
-* /healthz works.
+   Cliniko remains the source of truth. Pulse performs read-only synchronisation.
 
-Do not use production-mode startup for local authentication testing.
+4. Confirm configured state, counts and recent jobs load.
+5. Select Test connection. Confirm only the stable Pulse success or failure
+   message appears and the API key is never displayed.
+6. Select Sync now once. Confirm the running state prevents a second sync.
+7. Confirm a successful job shows aggregate counts only.
+8. Confirm ADMIN and CLINICIAN receive HTTP 403 for Cliniko management routes.
+9. Confirm an unauthenticated API request receives HTTP 401.
+10. Confirm health, readiness, login, dashboard and logout still work.
 
-GitHub verification
--------------------
-After the branch is pushed and a Pull Request is opened, GitHub Actions runs
-the workflow in .github\workflows\quality.yml. The stable check name is:
+Database count inspection
+-------------------------
+Open Prisma Studio without displaying patient rows in screenshots:
 
-   PUL-008 quality workflow
+   npm.cmd run db:studio
 
-The workflow installs with npm ci, lints, tests, generates Prisma Client,
-deploys migrations to an isolated PostgreSQL 16 database, validates migration
-status and scans repository history with Gitleaks.
+Confirm aggregate table counts for:
 
-A repository administrator must configure branch protection for main to
-require "PUL-008 quality workflow" before merge. The workflow cannot enable
-that repository setting. Do not claim it is enabled until GitHub shows the
-rule and a successful workflow run.
+* cliniko_businesses
+* cliniko_practitioners
+* cliniko_patients
+* cliniko_bookings
+* cliniko_booking_patients
 
-Files added
------------
-.github\workflows\quality.yml
-eslint.config.js
-test\route-contract.test.js
+Do not copy patient rows or contact information into logs, issues or reviews.
 
-Files changed
--------------
-package.json
-package-lock.json
+Final review
+------------
+After testing:
+
+   git diff --check
+   git diff --stat
+   git status --short
+
+Confirm .env, node_modules, database volumes and generated secrets are absent
+from Git status.
+
+Changed-file manifest
+---------------------
+.env.example
 README.md
 INSTALL-INSTRUCTIONS.txt
 docs\MASTER-PROJECT-BRIEF.md
-src\modules\auth\auth.routes.js
-src\modules\system\system.controller.js
-src\modules\system\system.routes.js
+prisma\schema.prisma
+prisma\migrations\20260730000000_cliniko_read_only_sync\migration.sql
+public\app.js
+public\index.html
+public\styles.css
+src\core\config\index.js
+src\modules\integrations\integration.controller.js
+src\modules\integrations\integration.routes.js
+src\modules\integrations\integration.service.js
+src\modules\integrations\cliniko\cliniko.client.js
+src\modules\integrations\cliniko\cliniko.errors.js
+src\modules\integrations\cliniko\cliniko.mapper.js
+src\modules\integrations\cliniko\cliniko.sync.service.js
+test\cliniko.client.test.js
+test\cliniko.mapper.test.js
+test\cliniko.sync.test.js
 
-Small testability changes
--------------------------
-The authentication router, system router and readiness controller now expose
-dependency-injected factory functions. Their existing production exports use
-the same original handlers and middleware, so runtime routes and contracts do
-not change. Tests use the factories with in-memory sessions and stubbed health
-and authentication dependencies; they do not use the clinic database.
-
-Dependencies
-------------
-Development dependency added:
-
-* eslint
-* globals (ESLint environment definitions)
-
-No production runtime dependency is added. Node's built-in test runner and
-HTTP client are used; no large testing framework is introduced.
-
-Safety
-------
-The package contains no real credentials, .env file, patient information,
-database data or generated runtime secret. It does not change authentication
-rules, database models, migrations, public response contracts or application
-features.
+Security boundaries
+-------------------
+The implementation performs Cliniko GET requests only. It does not persist API
+keys, clinical notes, booking notes, raw responses or excluded patient fields.
+It does not implement Xero, expose patient rows, add unauthenticated routes or
+weaken authentication.
