@@ -488,14 +488,15 @@ Every future milestone is a discrete, reviewable delivery unit. A milestone may 
 - **Acceptance criteria:** Directors and Practice Managers can test and run one non-overlapping read-only sync; failures are sanitised; no clinical/free-text fields, credentials or raw upstream bodies are persisted or returned; all quality and migration checks pass.
 - **Status:** Implemented for review; not completed until local verification and merge.
 
-### PUL-010 — Live reception and scheduling
+### PUL-010 — Live clinic operations intelligence
 
 - **Milestone number:** PUL-010
-- **Name:** Live reception and scheduling using Cliniko data
-- **Objective:** Give reception a governed operational queue and diary using the PUL-009 local Cliniko projection.
-- **Main features:** Arrivals; contact and priority queues; diary views; availability; waitlist; appointment status; exceptions; assignments; source freshness.
+- **Name:** Live clinic operations intelligence using Cliniko data
+- **Objective:** Give clinic leaders governed visibility, prioritisation and investigation using the PUL-009 local Cliniko projection without recreating Cliniko's operational diary.
+- **Main features:** Timezone-correct daily overview; forward-booking momentum; timing-based rebooking opportunities; cancellation intelligence; bounded trends; transparent priority signals; approved patient investigation; source freshness.
 - **Dependencies:** PUL-009 and approved Cliniko contract.
-- **Acceptance criteria:** Authorized reception workflows use source-attributed data; stale data is identified; role, privacy and failure paths are tested.
+- **Acceptance criteria:** All four approved roles can access source-labelled local insights; Cliniko remains the source of truth; no request-time Cliniko calls or write-back occur; no attendance, discharge, capacity, utilisation, revenue or clinical inference is made; thresholds, timezone, privacy, bounded-query and failure paths are tested.
+- **Status:** Implemented for review; not completed until local verification and merge.
 
 ### PUL-011 — Xero read-only integration
 

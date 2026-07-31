@@ -66,3 +66,85 @@ async function runClinikoAction(path,button){button.disabled=true;integrationMes
 document.querySelector('#clinikoTestButton').addEventListener('click',event=>runClinikoAction('/api/integrations/cliniko/test-connection',event.currentTarget));
 document.querySelector('#clinikoSyncButton').addEventListener('click',event=>runClinikoAction('/api/integrations/cliniko/sync',event.currentTarget));
 loadClinikoIntegration();
+
+const operationsState={tab:'forward',date:new Date().toISOString().slice(0,10),loaded:false,today:null,forward:null,rebooking:null,cancellations:null,trends:null};
+const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+const operationsDate=document.querySelector('#operationsDate');
+const operationsMessage=document.querySelector('#operationsMessage');
+const operationsDetail=document.querySelector('#operationsDetail');
+operationsDate.value=operationsState.date;
+const queryString=values=>{const query=new URLSearchParams();Object.entries(values).forEach(([key,value])=>{if(value!==''&&value!==undefined&&value!==null)query.set(key,value)});return query.toString()};
+const clinicTime=(value,timeZone)=>value?new Intl.DateTimeFormat('en-AU',{timeZone,dateStyle:'medium',timeStyle:'short'}).format(new Date(value)):'—';
+const patientName=patient=>`${patient?.firstName||''} ${patient?.lastName||''}`.trim()||'Unnamed patient';
+function setOperationsError(error){operationsMessage.textContent=error.message;operationsMessage.classList.add('error');document.querySelector('#operationsRetry').hidden=false}
+function summaryCard(label,value){return `<article class="stat-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`}
+function percent(value){return Number.isFinite(value)?`${(value*100).toFixed(1)}%`:'—'}
+function renderOperationsSummary(){
+ const data=operationsState.today;if(!data)return;
+ document.querySelector('#operationsSummary').innerHTML=[
+  ['Bookings',data.totalBookings],['Active',data.activeBookings],['Cancelled',data.cancelledBookings],
+  ['Practitioners',data.practitionersWithBookings],['First appointment',clinicTime(data.firstAppointmentAt,data.timeZone)],
+  ['Last appointment',clinicTime(data.lastAppointmentAt,data.timeZone)]
+ ].map(([label,value])=>summaryCard(label,value)).join('');
+}
+function renderOperationsSignals(){
+ const forward=operationsState.forward?.practitioners||[];const cancellations=operationsState.cancellations;const rebooking=operationsState.rebooking;
+ const weakening=forward.filter(item=>item.signal).length;
+ const cards=[
+  {title:'No-future-booking signals',value:rebooking?.pagination?.total??'—',text:'Patients meeting the selected timing rule. Attendance and discharge are not inferred.',tab:'rebooking',warning:Boolean(rebooking?.pagination?.total)},
+  {title:'Forward-booking momentum',value:weakening,text:`${weakening} practitioner${weakening===1?'':'s'} materially below the preceding equal period.`,tab:'forward',warning:Boolean(weakening)},
+  {title:'Cancellation exposure',value:cancellations?percent(cancellations.cancellationRate):'—',text:cancellations?.signal?'Rate exceeds the prior equal period threshold.':'Compared with the immediately preceding equal period.',tab:'cancellations',warning:Boolean(cancellations?.signal)},
+  {title:'Appointment-type trends',value:'Review',text:'Booking volume changes are shown only from locally synced appointment data.',tab:'trends',warning:false}
+ ];
+ document.querySelector('#operationsSignals').innerHTML=cards.map(card=>`<article class="priority-card signal-card ${card.warning?'warning':''}"><strong>${escapeHtml(card.title)}</strong><div class="impact">${escapeHtml(card.value)}</div><p>${escapeHtml(card.text)}</p><button class="text-button signal-action" data-open-operations="${card.tab}">Investigate →</button></article>`).join('');
+ document.querySelectorAll('[data-open-operations]').forEach(button=>button.addEventListener('click',()=>selectOperationsTab(button.dataset.openOperations)));
+}
+function table(headers,rows){return `<article class="panel operations-table"><div class="table-wrap"><table><thead><tr>${headers.map(value=>`<th>${escapeHtml(value)}</th>`).join('')}</tr></thead><tbody>${rows||`<tr><td colspan="${headers.length}">No data for this period.</td></tr>`}</tbody></table></div></article>`}
+function renderOperationsDetail(){
+ const tab=operationsState.tab;
+ if(tab==='forward'){const data=operationsState.forward;operationsDetail.innerHTML=data?table(['Practitioner','Forward bookings','Booked days','Cancellations','Prior period','Momentum'],data.practitioners.map(item=>`<tr><td>${escapeHtml(item.practitioner.displayName)}</td><td>${item.bookings}</td><td>${item.bookedDays}</td><td>${item.cancellations}</td><td>${item.bookingMomentum.previous}</td><td>${item.bookingMomentum.percentChange===null?'New baseline':`${item.bookingMomentum.percentChange.toFixed(1)}%`}</td></tr>`).join('')):'<div class="empty-state">Loading forward bookings…</div>'}
+ if(tab==='rebooking'){const data=operationsState.rebooking;operationsDetail.innerHTML=data?`<p class="source-note">${escapeHtml(data.signalBasis)}</p>${table(['Patient','Last booking','Days since','Practitioner','Appointment type','Contact'],data.patients.map(item=>`<tr><td><button class="row-action" data-patient-id="${escapeHtml(item.patient.clinikoId)}">${escapeHtml(patientName(item.patient))}</button></td><td>${escapeHtml(clinicTime(item.lastBooking?.startsAt,data.timeZone))}</td><td>${escapeHtml(item.daysSinceLastBooking)}</td><td>${escapeHtml(item.lastBooking?.practitioner?.displayName||'—')}</td><td>${escapeHtml(item.lastBooking?.appointmentType?.name||'—')}</td><td>${escapeHtml(item.patient.mobilePhone||item.patient.homePhone||item.patient.email||'—')}</td></tr>`).join(''))}`:'<div class="empty-state">Loading rebooking signals…</div>'}
+ if(tab==='cancellations'){const data=operationsState.cancellations;operationsDetail.innerHTML=data?`${summaryCard('Cancellation rate',percent(data.cancellationRate))}${table(['Practitioner','Cancellations'],data.cancellationsByPractitioner.map(item=>`<tr><td>${escapeHtml(item.practitioner?.displayName||'Unassigned')}</td><td>${item.count}</td></tr>`).join(''))}`:'<div class="empty-state">Loading cancellation intelligence…</div>'}
+ if(tab==='trends'){const data=operationsState.trends;const maximum=Math.max(1,...(data?.trends||[]).map(item=>item.bookingCount));operationsDetail.innerHTML=data?`<article class="panel"><h3>Booking trend</h3><p>Counts only; no revenue, capacity or utilisation inference.</p><div class="mini-bars">${data.trends.map(item=>`<div class="mini-bar"><span>${escapeHtml(item.label)}</span><i style="width:${Math.round(item.bookingCount/maximum*100)}%"></i><strong>${item.bookingCount}</strong></div>`).join('')||'<div class="empty-state">No trend data for this period.</div>'}</div></article>`:'<div class="empty-state">Loading trends…</div>'}
+ operationsDetail.querySelectorAll('[data-patient-id]').forEach(button=>button.addEventListener('click',()=>openOperationsPatient(button.dataset.patientId)));
+}
+function operationsParams(){
+ const horizon=Number(document.querySelector('#operationsHorizon').value);const practitionerId=document.querySelector('#operationsPractitioner').value;
+ const endDate=new Date(`${operationsState.date}T00:00:00Z`);endDate.setUTCDate(endDate.getUTCDate()+horizon-1);
+ return {horizon,practitionerId,endDate:endDate.toISOString().slice(0,10)}
+}
+async function loadOperations(){
+ operationsMessage.textContent='Loading locally synced Cliniko insights…';operationsMessage.classList.remove('error');document.querySelector('#operationsRetry').hidden=true;
+ const {horizon,practitionerId,endDate}=operationsParams();
+ try{
+  const [today,forward,rebooking,cancellations,trends]=await Promise.all([
+   pulseJson(`/api/operations/today?${queryString({date:operationsState.date})}`),
+   pulseJson(`/api/operations/forward-bookings?${queryString({startDate:operationsState.date,horizonDays:horizon,practitionerId})}`),
+   pulseJson(`/api/operations/rebooking-risk?${queryString({referenceDate:operationsState.date,minimumDays:14,pageSize:25,practitionerId})}`),
+   pulseJson(`/api/operations/cancellations?${queryString({startDate:operationsState.date,endDate,practitionerId})}`),
+   pulseJson(`/api/operations/trends?${queryString({startDate:operationsState.date,endDate,groupBy:'day',practitionerId})}`)
+  ]);
+  Object.assign(operationsState,{today,forward,rebooking,cancellations,trends,loaded:true});
+  operationsMessage.textContent=`Last Cliniko sync: ${clinicTime(today.lastSuccessfulClinikoSyncAt,today.timeZone)}. Read-only local data.`;
+  renderOperationsSummary();renderOperationsSignals();renderOperationsDetail();
+ }catch(error){setOperationsError(error)}
+}
+async function loadOperationsFilters(){
+ try{const data=await pulseJson('/api/operations/practitioners');document.querySelector('#operationsPractitioner').innerHTML='<option value="">All practitioners</option>'+data.practitioners.map(item=>`<option value="${escapeHtml(item.clinikoId)}">${escapeHtml(item.displayName)}</option>`).join('')}catch(error){setOperationsError(error)}
+}
+function selectOperationsTab(tab){operationsState.tab=tab;document.querySelectorAll('.operations-tab').forEach(button=>button.classList.toggle('active',button.dataset.operationsTab===tab));renderOperationsDetail()}
+function moveOperationsDate(days){const date=new Date(`${operationsState.date}T00:00:00Z`);date.setUTCDate(date.getUTCDate()+days);operationsState.date=date.toISOString().slice(0,10);operationsDate.value=operationsState.date;loadOperations()}
+document.querySelectorAll('.operations-tab').forEach(button=>button.addEventListener('click',()=>selectOperationsTab(button.dataset.operationsTab)));
+document.querySelector('#operationsPrevious').addEventListener('click',()=>moveOperationsDate(-1));document.querySelector('#operationsNext').addEventListener('click',()=>moveOperationsDate(1));
+document.querySelector('#operationsToday').addEventListener('click',()=>{operationsState.date=new Date().toISOString().slice(0,10);operationsDate.value=operationsState.date;loadOperations()});
+operationsDate.addEventListener('change',()=>{if(operationsDate.value){operationsState.date=operationsDate.value;loadOperations()}});
+document.querySelector('#operationsPractitioner').addEventListener('change',loadOperations);document.querySelector('#operationsHorizon').addEventListener('change',loadOperations);
+document.querySelector('#operationsRetry').addEventListener('click',loadOperations);
+function closeOperationsDrawer(){document.querySelector('#operationsDrawer').classList.remove('open');document.querySelector('#operationsDrawerBackdrop').classList.remove('open')}
+async function openOperationsPatient(clinikoId){
+ const content=document.querySelector('#operationsDrawerContent');content.innerHTML='<p>Loading patient summary…</p>';document.querySelector('#operationsDrawer').classList.add('open');document.querySelector('#operationsDrawerBackdrop').classList.add('open');
+ try{const data=await pulseJson(`/api/operations/patients/${encodeURIComponent(clinikoId)}`);const contact=[data.patient.email,data.patient.mobilePhone,data.patient.homePhone].filter(Boolean);const bookings=items=>items.map(item=>`<div class="booking-history-item"><strong>${escapeHtml(item.appointmentType.name||item.bookingType||'Appointment')}</strong><span>${escapeHtml(clinicTime(item.startsAt,operationsState.today?.timeZone))} · ${escapeHtml(item.practitioner?.displayName||'Unassigned')}</span></div>`).join('')||'<p>No bookings in this bounded view.</p>';content.innerHTML=`<p class="eyebrow">READ-ONLY PATIENT OPERATIONS</p><h2>${escapeHtml(patientName(data.patient))}</h2><div class="detail-contact">${contact.map(value=>`<span>${escapeHtml(value)}</span>`).join('')||'<span>No approved contact details synced.</span>'}</div><div class="meta-box"><span>NO FUTURE BOOKING</span><strong>${data.noFutureBooking?'Yes':'No'}</strong></div><h3 class="detail-heading">Upcoming bookings</h3><div class="booking-history">${bookings(data.upcomingBookings)}</div><h3 class="detail-heading">Recent past bookings</h3><div class="booking-history">${bookings(data.recentPastBookings)}</div><p class="read-only-note">Appointment timing only. Pulse does not infer attendance, discharge or clinical risk. Make changes in Cliniko.</p>`}catch(error){content.innerHTML=`<p class="workspace-message error">${escapeHtml(error.message)}</p>`}
+}
+document.querySelector('#operationsDrawerClose').addEventListener('click',closeOperationsDrawer);document.querySelector('#operationsDrawerBackdrop').addEventListener('click',closeOperationsDrawer);
+document.querySelector('#operationsPatientForm').addEventListener('submit',async event=>{event.preventDefault();const term=document.querySelector('#operationsPatientSearch').value.trim();const message=document.querySelector('#operationsPatientMessage');if(term.length<2){message.textContent='Enter at least two characters.';return}message.textContent='Searching…';try{const data=await pulseJson(`/api/operations/patients/search?${queryString({q:term,pageSize:20})}`);document.querySelector('#operationsPatientResults').innerHTML=data.patients.map(patient=>`<button class="patient-result" data-patient-id="${escapeHtml(patient.clinikoId)}"><strong>${escapeHtml(patientName(patient))}</strong><span>${escapeHtml(patient.mobilePhone||patient.homePhone||patient.email||'No contact detail')}</span></button>`).join('')||'<div class="empty-state">No matching patients.</div>';document.querySelector('#operationsPatientResults').querySelectorAll('[data-patient-id]').forEach(button=>button.addEventListener('click',()=>openOperationsPatient(button.dataset.patientId)));message.textContent=`${data.pagination.total} result${data.pagination.total===1?'':'s'}.`}catch(error){message.textContent=error.message}});
+document.querySelector('[data-view="operations"]').addEventListener('click',()=>{if(!operationsState.loaded){loadOperationsFilters();loadOperations()}});

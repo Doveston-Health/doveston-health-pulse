@@ -123,7 +123,44 @@
       <section class="view empty-view" id="view-team"><h1>Team</h1><p>Practitioner scorecards, mentoring and goals are queued for the next sprint.</p></section>
       <section class="view empty-view" id="view-finance"><h1>Finance</h1><p>Xero reporting and revenue forecasting will be connected in a later sprint.</p></section>
       <section class="view empty-view" id="view-marketing"><h1>Marketing</h1><p>Campaign attribution and referral-source ROI are queued for development.</p></section>
-      <section class="view empty-view" id="view-operations"><h1>Operations</h1><p>Tasks, compliance and clinic systems will live here.</p></section>
+      <section class="view" id="view-operations">
+        <div class="page-head operations-head">
+          <div><p class="eyebrow">READ-ONLY INSIGHTS FROM CLINIKO</p><h1>Clinic Operations</h1><p>Live visibility, operational signals and investigation from locally synced data.</p></div>
+          <div class="date-controls">
+            <button class="secondary-button" id="operationsPrevious" type="button" aria-label="Previous day">←</button>
+            <input class="select" id="operationsDate" type="date" aria-label="Clinic date" />
+            <button class="secondary-button" id="operationsToday" type="button">Today</button>
+            <button class="secondary-button" id="operationsNext" type="button" aria-label="Next day">→</button>
+          </div>
+        </div>
+        <p class="source-note"><strong>Cliniko remains the source of truth.</strong> Complete all appointment and patient-record changes in Cliniko.</p>
+        <div class="operations-summary" id="operationsSummary" aria-live="polite"></div>
+        <div id="operationsMessage" class="workspace-message" role="status"></div>
+        <button class="secondary-button" id="operationsRetry" type="button" hidden>Retry</button>
+
+        <div class="section-heading"><div><h2>Priority signals</h2><p>Transparent rules highlight changes worth investigating; they are not clinical or AI conclusions.</p></div></div>
+        <div class="priority-grid" id="operationsSignals"></div>
+
+        <article class="panel operations-controls">
+          <select id="operationsPractitioner" class="select" aria-label="Practitioner"><option value="">All practitioners</option></select>
+          <select id="operationsHorizon" class="select" aria-label="Analysis period"><option value="7">7 days</option><option value="14" selected>14 days</option><option value="30">30 days</option></select>
+          <button class="secondary-button operations-tab active" data-operations-tab="forward" type="button">Forward bookings</button>
+          <button class="secondary-button operations-tab" data-operations-tab="rebooking" type="button">Rebooking risk</button>
+          <button class="secondary-button operations-tab" data-operations-tab="cancellations" type="button">Cancellations</button>
+          <button class="secondary-button operations-tab" data-operations-tab="trends" type="button">Trends</button>
+        </article>
+        <section class="operations-detail" id="operationsDetail" aria-live="polite"></section>
+
+        <article class="panel patient-investigation">
+          <div class="panel-head"><div><h3>Patient investigation</h3><p>Approved contact fields and bounded booking history only.</p></div></div>
+          <form class="patient-search-form" id="operationsPatientForm">
+            <div class="search"><span>⌕</span><input id="operationsPatientSearch" minlength="2" placeholder="Name, email or phone" /></div>
+            <button class="primary-button" type="submit">Search</button>
+          </form>
+          <div id="operationsPatientMessage" class="workspace-message" role="status"></div>
+          <div class="patient-results" id="operationsPatientResults"></div>
+        </article>
+      </section>
       <section class="view empty-view" id="view-knowledge"><h1>Knowledge</h1><p>Policies, SOPs and staff resources will live here.</p></section>
       <section class="view" id="view-settings">
         <div class="page-head"><div><p class="eyebrow">PLATFORM ADMINISTRATION</p><h1>Settings</h1><p>Governed integration and clinic configuration.</p></div></div>
@@ -147,6 +184,12 @@
   <aside class="drawer" id="referralDrawer" aria-hidden="true">
     <button class="drawer-close" id="drawerClose">×</button>
     <div id="drawerContent"></div>
+  </aside>
+
+  <div class="drawer-backdrop" id="operationsDrawerBackdrop"></div>
+  <aside class="drawer" id="operationsDrawer" aria-hidden="true" aria-label="Patient operations summary">
+    <button class="drawer-close" id="operationsDrawerClose" aria-label="Close patient summary">×</button>
+    <div id="operationsDrawerContent"></div>
   </aside>
 
   <div class="modal-backdrop" id="modalBackdrop">
