@@ -1,29 +1,24 @@
 import crypto from 'node:crypto';
-import { Router } from 'express';
-import { config } from '../../core/config/index.js';
+import {Router} from 'express';
+import {config} from '../../core/config/index.js';
+import {requireRole} from '../auth/auth.middleware.js';
+import {asyncHandler} from '../../shared/http/async-handler.js';
+import {counts, status, sync, syncJobs, testConnection} from './integration.controller.js';
 
 export const integrationRouter = Router();
+const manageCliniko = requireRole('DIRECTOR', 'PRACTICE_MANAGER');
 
-const clinikoHeaders = () => ({
-  Authorization: `Basic ${Buffer.from(`${config.cliniko.apiKey}:`).toString('base64')}`,
-  Accept: 'application/json',
-  'User-Agent': config.cliniko.userAgent
-});
+integrationRouter.post('/integrations/cliniko/test-connection', manageCliniko, asyncHandler(testConnection));
+integrationRouter.post('/integrations/cliniko/sync', manageCliniko, asyncHandler(sync));
+integrationRouter.get('/integrations/cliniko/status', manageCliniko, asyncHandler(status));
+integrationRouter.get('/integrations/cliniko/sync-jobs', manageCliniko, asyncHandler(syncJobs));
+integrationRouter.get('/integrations/cliniko/counts', manageCliniko, asyncHandler(counts));
 
-integrationRouter.get('/cliniko/practitioners', async (_request, response) => {
-  if (!config.cliniko.enabled) {
-    return response.status(503).json({error: 'Cliniko is not configured. Add CLINIKO_API_KEY to the server environment.'});
-  }
-
-  try {
-    const clinikoResponse = await fetch('https://api.au4.cliniko.com/v1/practitioners?per_page=100', {headers: clinikoHeaders()});
-    if (!clinikoResponse.ok) {
-      return response.status(clinikoResponse.status).json({error: 'Cliniko request failed', details: await clinikoResponse.text()});
-    }
-    response.json(await clinikoResponse.json());
-  } catch (error) {
-    response.status(500).json({error: 'Cliniko connection error', details: error.message});
-  }
+integrationRouter.get('/cliniko/practitioners', manageCliniko, (_request, response) => {
+  response.status(410).json({
+    error: 'The raw Cliniko practitioners proxy has been removed. Use the governed Cliniko integration status routes.',
+    provider: 'CLINIKO'
+  });
 });
 
 integrationRouter.get('/xero/connect', (request, response) => {
@@ -45,6 +40,5 @@ integrationRouter.get('/xero/callback', async (request, response) => {
   if (!request.query.code || request.query.state !== request.session.xeroState) {
     return response.status(400).send('Invalid OAuth callback.');
   }
-  // Production: exchange code for tokens, encrypt refresh token at rest, fetch tenant connection, and persist audit metadata.
   response.redirect('/?xero=callback-received');
 });

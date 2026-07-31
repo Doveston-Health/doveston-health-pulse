@@ -23,7 +23,8 @@ const ENVIRONMENT = Object.freeze({
   }),
   clinikoEnabled: Object.freeze({name: 'CLINIKO_ENABLED'}),
   clinikoApiKey: Object.freeze({name: 'CLINIKO_API_KEY'}),
-  clinikoUserAgent: Object.freeze({name: 'CLINIKO_USER_AGENT', defaultValue: 'Doveston Health Pulse'}),
+  clinikoBaseUrl: Object.freeze({name: 'CLINIKO_BASE_URL', defaultValue: 'https://api.au4.cliniko.com/v1'}),
+  clinikoUserAgent: Object.freeze({name: 'CLINIKO_USER_AGENT', defaultValue: 'Doveston Health Pulse (support@example.com)'}),
   xeroEnabled: Object.freeze({name: 'XERO_ENABLED'}),
   xeroClientId: Object.freeze({name: 'XERO_CLIENT_ID'}),
   xeroClientSecret: Object.freeze({name: 'XERO_CLIENT_SECRET'}),
@@ -123,6 +124,23 @@ function loadConfig() {
   if (clinikoEnabled && !clinikoApiKey) {
     errors.push('CLINIKO_API_KEY is required when Cliniko functionality is enabled.');
   }
+  let clinikoBaseUrl;
+  try {
+    const parsedClinikoUrl = new URL(readString(ENVIRONMENT.clinikoBaseUrl));
+    if (parsedClinikoUrl.protocol !== 'https:') throw new Error();
+    if (!/(^|\.)cliniko\.com$/i.test(parsedClinikoUrl.hostname)) throw new Error();
+    parsedClinikoUrl.pathname = parsedClinikoUrl.pathname.replace(/\/+$/, '');
+    clinikoBaseUrl = parsedClinikoUrl.toString().replace(/\/$/, '');
+  } catch {
+    errors.push('CLINIKO_BASE_URL must be a valid HTTPS URL on an approved Cliniko host.');
+  }
+  const clinikoUserAgent = readString(ENVIRONMENT.clinikoUserAgent);
+  if (clinikoEnabled && !/^[^()\r\n]+\([^()\s@]+@[^()\s@]+\.[^()\s@]+\)$/.test(clinikoUserAgent)) {
+    errors.push('CLINIKO_USER_AGENT must include an application name and contact email in parentheses.');
+  }
+  if (clinikoEnabled && nodeEnv === 'production' && /@example\.(com|test)\)/i.test(clinikoUserAgent)) {
+    errors.push('CLINIKO_USER_AGENT must use a monitored contact email in production.');
+  }
 
   const xeroClientId = readOptionalString(ENVIRONMENT.xeroClientId);
   const xeroClientSecret = readOptionalString(ENVIRONMENT.xeroClientSecret);
@@ -177,7 +195,8 @@ function loadConfig() {
     cliniko: Object.freeze({
       enabled: clinikoEnabled,
       apiKey: clinikoApiKey,
-      userAgent: readString(ENVIRONMENT.clinikoUserAgent)
+      baseUrl: clinikoBaseUrl,
+      userAgent: clinikoUserAgent
     }),
     xero: Object.freeze({
       enabled: xeroEnabled,

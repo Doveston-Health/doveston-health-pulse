@@ -139,6 +139,104 @@ model IntegrationCredential {
   @@map("integration_credentials")
 }
 
+model ClinikoBusiness {
+  id              String           @id @default(uuid()) @db.Uuid
+  clinikoId       String           @unique @map("cliniko_id")
+  name            String
+  timeZone        String?          @map("time_zone")
+  archivedAt      DateTime?        @map("archived_at")
+  sourceCreatedAt DateTime?        @map("source_created_at")
+  sourceUpdatedAt DateTime?        @map("source_updated_at")
+  lastSyncedAt    DateTime         @map("last_synced_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  bookings        ClinikoBooking[]
+
+  @@map("cliniko_businesses")
+}
+
+model ClinikoPractitioner {
+  id                   String           @id @default(uuid()) @db.Uuid
+  clinikoId            String           @unique @map("cliniko_id")
+  active               Boolean          @default(true)
+  firstName            String           @map("first_name")
+  lastName             String           @map("last_name")
+  displayName          String           @map("display_name")
+  title                String?
+  designation          String?
+  label                String?
+  showInOnlineBookings Boolean?         @map("show_in_online_bookings")
+  sourceCreatedAt      DateTime?        @map("source_created_at")
+  sourceUpdatedAt      DateTime?        @map("source_updated_at")
+  lastSyncedAt         DateTime         @map("last_synced_at")
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+  bookings             ClinikoBooking[]
+
+  @@index([active])
+  @@map("cliniko_practitioners")
+}
+
+model ClinikoPatient {
+  id                    String                  @id @default(uuid()) @db.Uuid
+  clinikoId             String                  @unique @map("cliniko_id")
+  firstName             String                  @map("first_name")
+  lastName              String                  @map("last_name")
+  email                 String?
+  mobilePhone           String?                 @map("mobile_phone")
+  homePhone             String?                 @map("home_phone")
+  acceptedPrivacyPolicy Boolean?                 @map("accepted_privacy_policy")
+  archivedAt            DateTime?                @map("archived_at")
+  sourceCreatedAt       DateTime?                @map("source_created_at")
+  sourceUpdatedAt       DateTime?                @map("source_updated_at")
+  lastSyncedAt          DateTime                 @map("last_synced_at")
+  createdAt             DateTime                 @default(now()) @map("created_at")
+  updatedAt             DateTime                 @updatedAt @map("updated_at")
+  bookings              ClinikoBookingPatient[]
+
+  @@index([lastName, firstName])
+  @@map("cliniko_patients")
+}
+
+model ClinikoBooking {
+  id                       String                  @id @default(uuid()) @db.Uuid
+  clinikoId                String                  @unique @map("cliniko_id")
+  bookingType              String?                 @map("booking_type")
+  startsAt                 DateTime                 @map("starts_at")
+  endsAt                   DateTime                 @map("ends_at")
+  cancelledAt              DateTime?                @map("cancelled_at")
+  archivedAt               DateTime?                @map("archived_at")
+  deletedAt                DateTime?                @map("deleted_at")
+  practitionerId           String?                  @db.Uuid @map("practitioner_id")
+  businessId               String?                  @db.Uuid @map("business_id")
+  appointmentTypeClinikoId String?                  @map("appointment_type_cliniko_id")
+  appointmentTypeName      String?                  @map("appointment_type_name")
+  sourceCreatedAt          DateTime?                @map("source_created_at")
+  sourceUpdatedAt          DateTime?                @map("source_updated_at")
+  lastSyncedAt             DateTime                 @map("last_synced_at")
+  createdAt                DateTime                 @default(now()) @map("created_at")
+  updatedAt                DateTime                 @updatedAt @map("updated_at")
+  practitioner             ClinikoPractitioner?     @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
+  business                 ClinikoBusiness?         @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  patients                 ClinikoBookingPatient[]
+
+  @@index([startsAt])
+  @@index([practitionerId, startsAt])
+  @@index([businessId, startsAt])
+  @@map("cliniko_bookings")
+}
+
+model ClinikoBookingPatient {
+  bookingId String         @db.Uuid @map("booking_id")
+  patientId String         @db.Uuid @map("patient_id")
+  booking   ClinikoBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  patient   ClinikoPatient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@id([bookingId, patientId])
+  @@index([patientId])
+  @@map("cliniko_booking_patients")
+}
+
 model SyncJob {
   id            String        @id @default(uuid()) @db.Uuid
   integrationId String?       @db.Uuid @map("integration_id")

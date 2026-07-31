@@ -164,7 +164,8 @@ The application loads local values from `.env`. Environment variables already su
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and `POSTGRES_PORT`: configure the local Compose service. Keep them aligned with `DATABASE_URL`.
 - `CLINIKO_ENABLED`: `true` or `false`. If omitted, Cliniko is enabled when `CLINIKO_API_KEY` is present.
 - `CLINIKO_API_KEY`: required whenever Cliniko is enabled.
-- `CLINIKO_USER_AGENT`: optional Cliniko request identity.
+- `CLINIKO_BASE_URL`: HTTPS Cliniko API root; defaults to `https://api.au4.cliniko.com/v1`.
+- `CLINIKO_USER_AGENT`: application identity with a contact email, for example `Doveston Health Pulse (support@example.com)`.
 - `XERO_ENABLED`: `true` or `false`. If omitted, Xero is enabled when either Xero credential is present.
 - `XERO_CLIENT_ID` and `XERO_CLIENT_SECRET`: both required whenever Xero is enabled.
 - `XERO_REDIRECT_URI`: OAuth callback URL; defaults to the local callback URL.
@@ -276,6 +277,31 @@ The password must be at least 12 characters and contain uppercase, lowercase, nu
 
 For local testing, start PostgreSQL, apply migrations, seed roles, bootstrap a Director, start Pulse, and visit `http://localhost:3000/login`. Verify logout using the authenticated session and inspect authentication audit records through Prisma Studio if needed.
 
+## Cliniko read-only synchronisation
+
+PUL-009 replaces the raw proof proxy with a governed integration for Directors and Practice Managers. It tests connectivity, follows Cliniko pagination, and synchronises allow-listed businesses, practitioners, minimum-data patients and bookings into PostgreSQL. Cliniko remains the source of truth; Pulse never sends write requests to Cliniko.
+
+Configure local values in `.env` without committing the file:
+
+```text
+CLINIKO_ENABLED=true
+CLINIKO_BASE_URL=https://api.au4.cliniko.com/v1
+CLINIKO_API_KEY=replace-with-real-cliniko-api-key
+CLINIKO_USER_AGENT=Doveston Health Pulse (support@example.com)
+```
+
+The API key remains environment-only and is never returned, logged or persisted. The Settings workspace exposes connection state, aggregate counts, recent jobs, connection testing and manual sync to authorized roles. No patient-row API, clinical notes, booking notes or raw upstream payloads are exposed.
+
+Governed routes:
+
+- `POST /api/integrations/cliniko/test-connection`
+- `POST /api/integrations/cliniko/sync`
+- `GET /api/integrations/cliniko/status`
+- `GET /api/integrations/cliniko/sync-jobs?limit=10`
+- `GET /api/integrations/cliniko/counts`
+
+The old `GET /api/cliniko/practitioners` raw proxy now returns a safe compatibility response and never forwards Cliniko data.
+
 ## Quality checks
 
 PUL-008 adds ESLint, isolated route-contract tests, Prisma migration validation and repository credential scanning. GitHub Actions runs the complete quality workflow for every Pull Request and every push to `main`.
@@ -337,4 +363,4 @@ The `public` directory can be deployed as a static preview. The Express server w
 
 ## Current limitations
 
-This is not yet a production clinical system. Live patient documents, referral file uploads, Cliniko synchronisation, Xero data, credential encryption, fine-grained authorization administration and populated operational audit history are future development stages.
+This is not yet a production clinical system. Cliniko synchronisation is read-only and limited to approved operational fields. Live patient documents, referral file uploads, Xero data, credential encryption, fine-grained authorization administration and broader operational audit history are future development stages.

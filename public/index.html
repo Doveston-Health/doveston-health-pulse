@@ -125,7 +125,21 @@
       <section class="view empty-view" id="view-marketing"><h1>Marketing</h1><p>Campaign attribution and referral-source ROI are queued for development.</p></section>
       <section class="view empty-view" id="view-operations"><h1>Operations</h1><p>Tasks, compliance and clinic systems will live here.</p></section>
       <section class="view empty-view" id="view-knowledge"><h1>Knowledge</h1><p>Policies, SOPs and staff resources will live here.</p></section>
-      <section class="view empty-view" id="view-settings"><h1>Settings</h1><p>Integrations, permissions and clinic configuration will live here.</p></section>
+      <section class="view" id="view-settings">
+        <div class="page-head"><div><p class="eyebrow">PLATFORM ADMINISTRATION</p><h1>Settings</h1><p>Governed integration and clinic configuration.</p></div></div>
+        <article class="panel integration-panel" id="clinikoIntegration">
+          <div class="panel-head"><div><h3>Cliniko</h3><p>Cliniko remains the source of truth. Pulse performs read-only synchronisation.</p></div><span class="status-chip" id="clinikoStatus">Loading</span></div>
+          <p id="clinikoMessage" role="status"></p>
+          <div class="integration-metrics" id="clinikoCounts"></div>
+          <dl class="integration-details">
+            <div><dt>Configured</dt><dd id="clinikoConfigured">—</dd></div>
+            <div><dt>Last successful sync</dt><dd id="clinikoLastSuccess">Never</dd></div>
+            <div><dt>Last failed sync</dt><dd id="clinikoLastFailure">Never</dd></div>
+          </dl>
+          <div class="modal-actions"><button class="secondary-button" id="clinikoTestButton" type="button">Test connection</button><button class="primary-button" id="clinikoSyncButton" type="button">Sync now</button></div>
+          <h3>Recent sync jobs</h3><div id="clinikoJobs" class="sync-jobs"></div>
+        </article>
+      </section>
     </main>
   </div>
 
