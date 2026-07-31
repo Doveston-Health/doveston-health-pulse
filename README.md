@@ -364,3 +364,35 @@ The `public` directory can be deployed as a static preview. The Express server w
 ## Current limitations
 
 This is not yet a production clinical system. Cliniko synchronisation is read-only and limited to approved operational fields. Live patient documents, referral file uploads, Xero data, credential encryption, fine-grained authorization administration and broader operational audit history are future development stages.
+
+## PUL-010 clinic operations intelligence
+
+Clinic Operations is a read-only management and investigation layer over the locally synchronised Cliniko projection. Cliniko remains the source of truth and the place where appointments and patient records are created or changed. Page requests never call Cliniko.
+
+All eight routes require authentication and one of `DIRECTOR`, `PRACTICE_MANAGER`, `ADMIN` or `CLINICIAN`:
+
+- `GET /api/operations/today`
+- `GET /api/operations/forward-bookings`
+- `GET /api/operations/rebooking-risk`
+- `GET /api/operations/cancellations`
+- `GET /api/operations/trends`
+- `GET /api/operations/patients/search`
+- `GET /api/operations/patients/:clinikoId`
+- `GET /api/operations/practitioners`
+
+The workspace reports booking volume, cancellation exposure, forward-booking momentum and timing-based no-future-booking signals. These are transparent operational rules, not AI or clinical conclusions. Rebooking signals do not establish attendance, discharge or clinical risk. Pulse cannot calculate true capacity or utilisation until authoritative working-hours and availability data exists.
+
+Signal thresholds are centralised in `src/modules/operations/operations.validation.js`: 14 days for the default rebooking window, a 5 percentage-point cancellation increase, a 25% forward-booking decline, and a 25% appointment-type change with at least five bookings. Every date range, horizon and result set is bounded. Clinic-day boundaries use the synced business IANA timezone, including daylight-saving transitions.
+
+Windows verification:
+
+```powershell
+npm.cmd run lint
+npm.cmd test
+npm.cmd run quality
+npm.cmd run db:generate
+npm.cmd run db:migrate:check
+npm.cmd run dev
+```
+
+macOS/Linux may use the equivalent `npm` commands. Search terms remain outside structured request logs because request logging records only the URL path, never the query string. Approved patient contact fields are returned only to authorized users; clinical notes, raw Cliniko payloads and local database IDs are excluded.

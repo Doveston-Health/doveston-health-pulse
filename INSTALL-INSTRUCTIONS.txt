@@ -1,141 +1,57 @@
-PUL-009 CLINIKO READ-ONLY INTEGRATION AND INITIAL SYNC
-======================================================
+PUL-010 CLINIC OPERATIONS INTELLIGENCE
+======================================
 
-Required branch
----------------
-feature/pul-009-cliniko-read-only-integration
+Copy each file from the ZIP into the matching repository path. Preserve the
+folders exactly and allow these listed files to replace their existing copies.
+No other file belongs to this delivery.
 
-Installation
-------------
-1. Confirm and review the branch before extracting:
-
-   git branch --show-current
-   git status --short
-   git diff --stat
-
-2. Commit or back up unrelated local work.
-3. Extract the ZIP into the repository root, preserving folders and replacing
-   only the files listed in the manifest below.
-4. Install dependencies:
-
-   npm.cmd install
-
-5. Start local PostgreSQL and confirm it is healthy:
-
-   docker compose up -d postgres
-   docker compose ps
-
-6. Create a development migration from the supplied schema only if reviewing
-   the migration interactively; otherwise apply the committed migration:
-
-   npm.cmd run db:migrate:deploy
-
-7. Generate Prisma Client and seed the baseline integration records:
-
-   npm.cmd run db:generate
-   npm.cmd run db:seed
-
-Local Cliniko configuration
----------------------------
-Edit .env in an editor. Do not echo or print the real API key in terminal
-output, shell history, screenshots, logs or support messages.
-
-Use:
-
-CLINIKO_ENABLED=true
-CLINIKO_BASE_URL=https://api.au4.cliniko.com/v1
-CLINIKO_API_KEY=replace-with-real-cliniko-api-key
-CLINIKO_USER_AGENT=Doveston Health Pulse (support@example.com)
-
-Replace the key placeholder locally and use a genuine monitored contact email
-in the User-Agent. Never commit .env.
-
-Automated verification
-----------------------
-Run each Windows PowerShell command separately:
-
-   npm.cmd run lint
-   npm.cmd test
-   npm.cmd run quality
-   npm.cmd run db:generate
-   npm.cmd run db:migrate:check
-
-Do not change or bypass PowerShell execution policy. Use npm.cmd instead of
-npm and npx.cmd instead of npx.
-
-Manual verification
--------------------
-1. Start Pulse in development mode:
-
-   npm.cmd run dev
-
-2. Sign in as a Director or Practice Manager.
-3. Open Settings and confirm the Cliniko panel states:
-
-   Cliniko remains the source of truth. Pulse performs read-only synchronisation.
-
-4. Confirm configured state, counts and recent jobs load.
-5. Select Test connection. Confirm only the stable Pulse success or failure
-   message appears and the API key is never displayed.
-6. Select Sync now once. Confirm the running state prevents a second sync.
-7. Confirm a successful job shows aggregate counts only.
-8. Confirm ADMIN and CLINICIAN receive HTTP 403 for Cliniko management routes.
-9. Confirm an unauthenticated API request receives HTTP 401.
-10. Confirm health, readiness, login, dashboard and logout still work.
-
-Database count inspection
--------------------------
-Open Prisma Studio without displaying patient rows in screenshots:
-
-   npm.cmd run db:studio
-
-Confirm aggregate table counts for:
-
-* cliniko_businesses
-* cliniko_practitioners
-* cliniko_patients
-* cliniko_bookings
-* cliniko_booking_patients
-
-Do not copy patient rows or contact information into logs, issues or reviews.
-
-Final review
-------------
-After testing:
-
-   git diff --check
-   git diff --stat
-   git status --short
-
-Confirm .env, node_modules, database volumes and generated secrets are absent
-from Git status.
-
-Changed-file manifest
----------------------
-.env.example
 README.md
 INSTALL-INSTRUCTIONS.txt
 docs\MASTER-PROJECT-BRIEF.md
-prisma\schema.prisma
-prisma\migrations\20260730000000_cliniko_read_only_sync\migration.sql
 public\app.js
 public\index.html
 public\styles.css
-src\core\config\index.js
-src\modules\integrations\integration.controller.js
-src\modules\integrations\integration.routes.js
-src\modules\integrations\integration.service.js
-src\modules\integrations\cliniko\cliniko.client.js
-src\modules\integrations\cliniko\cliniko.errors.js
-src\modules\integrations\cliniko\cliniko.mapper.js
-src\modules\integrations\cliniko\cliniko.sync.service.js
-test\cliniko.client.test.js
-test\cliniko.mapper.test.js
-test\cliniko.sync.test.js
+src\app.js
+src\modules\operations\operations.controller.js
+src\modules\operations\operations.routes.js
+src\modules\operations\operations.service.js
+src\modules\operations\operations.validation.js
+test\operations.routes.test.js
+test\operations.service.test.js
 
-Security boundaries
--------------------
-The implementation performs Cliniko GET requests only. It does not persist API
-keys, clinical notes, booking notes, raw responses or excluded patient fields.
-It does not implement Xero, expose patient rows, add unauthenticated routes or
-weaken authentication.
+No Prisma migration is included. PUL-009 already provides the required models
+and indexes for booking time, practitioner/time, business/time, patient name
+and booking-patient lookup.
+
+WINDOWS SETUP AND VERIFICATION
+------------------------------
+
+From PowerShell in the repository root:
+
+1. Copy .env.example to .env if a local .env does not already exist.
+2. Keep the existing DATABASE_URL and SESSION_SECRET values private.
+3. Start PostgreSQL if it is not already running.
+4. Run:
+
+   npm.cmd install
+   npm.cmd run db:generate
+   npm.cmd run db:migrate:check
+   npm.cmd run lint
+   npm.cmd test
+   npm.cmd run quality
+   npm.cmd run dev
+
+Do not change PowerShell execution policy. Use npm.cmd and npx.cmd on Windows.
+
+Open the application, sign in with an approved local account, and select
+Operations. Confirm the source label says "Read-only insights from Cliniko",
+the current measures load, period controls work, and patient search rejects a
+one-character query. Use Cliniko for every operational change.
+
+SECURITY AND PRODUCT BOUNDARY
+-----------------------------
+
+Clinic Operations queries PostgreSQL only. It does not call Cliniko while a
+page is loading, write to Cliniko, expose notes or raw source payloads, infer
+attendance or discharge, or calculate unsupported capacity/utilisation.
+Patient search terms are excluded from structured request logs.
