@@ -1,0 +1,11 @@
+import {Router} from 'express';
+import {requireRole} from '../../auth/auth.middleware.js';
+import {asyncHandler} from '../../../shared/http/async-handler.js';
+import {callback,connect,getStatus,remove,sync,tenant} from './xero.controller.js';
+export const xeroRouter=Router();const manage=requireRole('DIRECTOR','PRACTICE_MANAGER');
+xeroRouter.get('/integrations/xero/status',manage,asyncHandler(getStatus));
+xeroRouter.get('/integrations/xero/connect',manage,asyncHandler(connect));
+xeroRouter.get('/integrations/xero/callback',manage,asyncHandler(callback));
+xeroRouter.post('/integrations/xero/tenant',manage,asyncHandler(tenant));
+xeroRouter.post('/integrations/xero/disconnect',manage,asyncHandler(remove));
+xeroRouter.post('/integrations/xero/sync',manage,asyncHandler(sync));

@@ -1,57 +1,25 @@
-PUL-010 CLINIC OPERATIONS INTELLIGENCE
-======================================
+PUL-011 XERO READ-ONLY FINANCE
+==============================
 
-Copy each file from the ZIP into the matching repository path. Preserve the
-folders exactly and allow these listed files to replace their existing copies.
-No other file belongs to this delivery.
+Copy every ZIP file to its matching project path. The ZIP contains configuration documentation, one Prisma migration, Xero integration and finance modules, frontend files and tests.
 
-README.md
-INSTALL-INSTRUCTIONS.txt
-docs\MASTER-PROJECT-BRIEF.md
-public\app.js
-public\index.html
-public\styles.css
-src\app.js
-src\modules\operations\operations.controller.js
-src\modules\operations\operations.routes.js
-src\modules\operations\operations.service.js
-src\modules\operations\operations.validation.js
-test\operations.routes.test.js
-test\operations.service.test.js
+Windows setup:
+1. Run npm.cmd install.
+2. Run npm.cmd run db:generate and npm.cmd run db:migrate:deploy.
+3. Create a Xero Web App and register exactly http://localhost:3000/api/integrations/xero/callback.
+4. Copy the XERO_* placeholders from .env.example into private .env values.
+5. Generate a private key with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+6. Run npm.cmd run dev, sign in as DIRECTOR or PRACTICE_MANAGER, connect Xero, select the correct organisation and run Sync Xero.
+7. Verify Finance shows "Read-only insights from Xero" and the correct freshness timestamp.
 
-No Prisma migration is included. PUL-009 already provides the required models
-and indexes for booking time, practitioner/time, business/time, patient name
-and booking-patient lookup.
+Do not change PowerShell execution policy. Do not paste client secrets, tokens or encryption keys into chat, logs or screenshots. Xero remains the accounting source of truth and all accounting actions must be completed there.
 
-WINDOWS SETUP AND VERIFICATION
-------------------------------
+Verification:
+npm.cmd run lint
+npm.cmd test
+npm.cmd run quality
+npm.cmd run db:generate
+npm.cmd run db:migrate:check
+git diff --check
 
-From PowerShell in the repository root:
-
-1. Copy .env.example to .env if a local .env does not already exist.
-2. Keep the existing DATABASE_URL and SESSION_SECRET values private.
-3. Start PostgreSQL if it is not already running.
-4. Run:
-
-   npm.cmd install
-   npm.cmd run db:generate
-   npm.cmd run db:migrate:check
-   npm.cmd run lint
-   npm.cmd test
-   npm.cmd run quality
-   npm.cmd run dev
-
-Do not change PowerShell execution policy. Use npm.cmd and npx.cmd on Windows.
-
-Open the application, sign in with an approved local account, and select
-Operations. Confirm the source label says "Read-only insights from Cliniko",
-the current measures load, period controls work, and patient search rejects a
-one-character query. Use Cliniko for every operational change.
-
-SECURITY AND PRODUCT BOUNDARY
------------------------------
-
-Clinic Operations queries PostgreSQL only. It does not call Cliniko while a
-page is loading, write to Cliniko, expose notes or raw source payloads, infer
-attendance or discharge, or calculate unsupported capacity/utilisation.
-Patient search terms are excluded from structured request logs.
+The migration creates tenant-scoped, Decimal-safe Xero connection, token, organisation, contact, invoice, payment, report-snapshot and sync-run tables. It does not store bank numbers, addresses, phone data, invoice line descriptions, attachments or raw Xero payloads.

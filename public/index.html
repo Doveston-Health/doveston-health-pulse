@@ -121,7 +121,14 @@
 
       <section class="view empty-view" id="view-patients"><h1>Patients</h1><p>Patient journey and retention workspace is queued for the next sprint.</p></section>
       <section class="view empty-view" id="view-team"><h1>Team</h1><p>Practitioner scorecards, mentoring and goals are queued for the next sprint.</p></section>
-      <section class="view empty-view" id="view-finance"><h1>Finance</h1><p>Xero reporting and revenue forecasting will be connected in a later sprint.</p></section>
+      <section class="view" id="view-finance">
+        <div class="page-head"><div><p class="eyebrow">READ-ONLY INSIGHTS FROM XERO</p><h1>Finance Snapshot</h1><p>Xero remains the accounting source of truth. Complete accounting actions in Xero.</p></div><button class="primary-button" id="xeroFinanceSync">Sync Xero</button></div>
+        <div id="financeMessage" class="workspace-message" role="status">Loading finance data…</div><button id="financeRetry" class="secondary-button" hidden>Retry</button>
+        <div class="operations-summary" id="financeSnapshot"></div>
+        <div class="priority-grid" id="financeSignals"></div>
+        <div class="content-grid"><article class="panel"><h3>Revenue trend</h3><p>Invoice-derived values are not cash received.</p><div id="financeTrend" class="mini-bars"></div></article><article class="panel"><h3>Receivables</h3><p>Bounded outstanding invoices for investigation in Xero.</p><div id="financeReceivables"></div></article></div>
+        <article class="panel" style="margin-top:18px"><h3>Profit and loss snapshot</h3><p id="financeProfitLoss">No synced report snapshot.</p></article>
+      </section>
       <section class="view empty-view" id="view-marketing"><h1>Marketing</h1><p>Campaign attribution and referral-source ROI are queued for development.</p></section>
       <section class="view" id="view-operations">
         <div class="page-head operations-head">
