@@ -1,7 +1,14 @@
 function decimal(value){if(value===null||value===undefined)return null;const text=String(value);if(!/^-?\d+(\.\d+)?$/.test(text))throw new Error('Invalid monetary value.');return text;}
-function date(value){return value?new Date(value):null;}
+function date(value){
+  if(value===null||value===undefined||value==='')return null;
+  const text=String(value);
+  const xero=text.match(/^\/Date\((-?\d+)(?:[+-]\d{4})?\)\/$/);
+  const parsed=xero?new Date(Number(xero[1])):new Date(text);
+  return Number.isNaN(parsed.getTime())?null:parsed;
+}
 export function mapContact(source){return {contactId:source.ContactID,name:source.Name,contactStatus:source.ContactStatus||null,isCustomer:Boolean(source.IsCustomer),isSupplier:Boolean(source.IsSupplier),email:source.EmailAddress||null,accountsReceivableTaxType:source.AccountsReceivableTaxType||null,accountsPayableTaxType:source.AccountsPayableTaxType||null,sourceUpdatedAt:date(source.UpdatedDateUTC),archivedAt:source.ContactStatus==='ARCHIVED'?new Date():null};}
 export function mapInvoice(source){return {invoiceId:source.InvoiceID,invoiceNumber:source.InvoiceNumber||null,reference:source.Reference||null,invoiceType:source.Type,status:source.Status,currencyCode:source.CurrencyCode,invoiceDate:date(source.Date),dueDate:date(source.DueDate),subtotal:decimal(source.SubTotal),totalTax:decimal(source.TotalTax),total:decimal(source.Total),amountDue:decimal(source.AmountDue),amountPaid:decimal(source.AmountPaid),amountCredited:decimal(source.AmountCredited),fullyPaidOnDate:date(source.FullyPaidOnDate),sourceUpdatedAt:date(source.UpdatedDateUTC),archivedAt:['DELETED','VOIDED'].includes(source.Status)?new Date():null,sourceContactId:source.Contact?.ContactID||null};}
 export function mapPayment(source){return {paymentId:source.PaymentID,paymentDate:date(source.Date),amount:decimal(source.Amount),status:source.Status||null,paymentType:source.PaymentType||null,sourceUpdatedAt:date(source.UpdatedDateUTC),sourceInvoiceId:source.Invoice?.InvoiceID||null};}
 export function mapOrganisation(source){return {tenantId:source.OrganisationID,legalName:source.LegalName||null,organisationName:source.Name,baseCurrency:source.BaseCurrency,countryCode:source.CountryCode||null,financialYearEndDay:source.FinancialYearEndDay||null,financialYearEndMonth:source.FinancialYearEndMonth||null,organisationType:source.OrganisationType||null,sourceUpdatedAt:date(source.UpdatedDateUTC)};}
 export function mapReport(reportType,source){if(!Array.isArray(source?.Reports)||!source.Reports[0])throw new Error('Unsupported Xero report structure.');const report=source.Reports[0];return {reportType,basis:report.ReportBasis||null,generatedAt:date(report.UpdatedDateUTC),metrics:{reportName:report.ReportName,reportDate:report.ReportDate,rows:(report.Rows||[]).filter(row=>['Section','Row'].includes(row.RowType)).map(row=>({type:row.RowType,title:row.Title||null,cells:(row.Cells||[]).map(cell=>({value:cell.Value||null,attributes:cell.Attributes||[]}))}))}};}
+

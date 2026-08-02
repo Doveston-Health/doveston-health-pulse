@@ -10,7 +10,7 @@ export function createXeroClient({accessToken,tenantId,fetchImpl=fetch,sleep=del
   if (!accessToken || !tenantId) throw new Error('Xero client requires an access token and tenant.');
   const approved=new URL(config.xero.apiBaseUrl);
   async function request(path,{attempt=0}={}) {
-    const url=new URL(path,config.xero.apiBaseUrl);
+    const url=path instanceof URL?new URL(path):new URL(String(path).replace(/^\/+/,''),`${config.xero.apiBaseUrl.replace(/\/+$/,'')}/`);
     if(url.protocol!=='https:'||url.hostname!==approved.hostname)throw new XeroClientError('Unsafe Xero pagination URL rejected.',400,'UNSAFE_XERO_URL');
     let response;
     try{response=await fetchImpl(url,{headers:{Authorization:`Bearer ${accessToken}`,'xero-tenant-id':tenantId,Accept:'application/json','User-Agent':`${config.app.name}/${config.app.version}`},signal:AbortSignal.timeout(15000)});}catch{throw new XeroClientError('Xero request timed out.',504,'XERO_TIMEOUT');}
@@ -27,3 +27,4 @@ export async function discoverTenants(accessToken,{fetchImpl=fetch}={}){
   const rows=await response.json().catch(()=>null);if(!Array.isArray(rows))throw new XeroClientError('Xero returned invalid tenant information.');
   return rows.map(({id,tenantId,tenantName,tenantType})=>({connectionId:id,tenantId,tenantName,tenantType})).filter(row=>row.tenantId&&row.tenantName);
 }
+
