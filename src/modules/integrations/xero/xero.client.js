@@ -18,7 +18,45 @@ export function createXeroClient({accessToken,tenantId,fetchImpl=fetch,sleep=del
     if(!response.ok)throw new XeroClientError(`Xero request failed with status ${response.status}.`,response.status===429?503:502,`XERO_${response.status}`);
     const body=await response.json().catch(()=>null);if(!body)throw new XeroClientError('Xero returned malformed JSON.',502,'XERO_INVALID_JSON');return body;
   }
-  return {request};
+  async function getAllPages(path,collection,{maxPages=100,pageSize=1000}={}) {
+    const rows=[];
+    const seen=new Set();
+    let observedPageSize=null;
+    const idField=collection==='Invoices'?'InvoiceID':collection==='Payments'?'PaymentID':null;
+
+    for(let page=1;page<=maxPages;page+=1){
+      const url=new URL(String(path).replace(/^\/+/,''),`${config.xero.apiBaseUrl.replace(/\/+$/,'')}/`);
+      url.searchParams.set('page',String(page));
+      url.searchParams.set('pageSize',String(pageSize));
+
+      const body=await request(url);
+      const pageRows=body?.[collection];
+
+      if(!Array.isArray(pageRows)){
+        throw new XeroClientError('Xero returned malformed pagination data.',502,'XERO_INVALID_JSON');
+      }
+
+      if(pageRows.length===0)return rows;
+      if(observedPageSize===null)observedPageSize=pageRows.length;
+
+      const newRows=idField
+        ? pageRows.filter(row=>{
+            const id=row?.[idField];
+            if(!id||seen.has(id))return false;
+            seen.add(id);
+            return true;
+          })
+        : pageRows;
+
+      if(newRows.length===0)return rows;
+      rows.push(...newRows);
+
+      if(pageRows.length<observedPageSize)return rows;
+    }
+
+    throw new XeroClientError('Xero pagination limit exceeded.',502,'XERO_PAGINATION_LIMIT');
+  }
+  return {request,getAllPages};
 }
 
 export async function discoverTenants(accessToken,{fetchImpl=fetch}={}){
@@ -27,4 +65,7 @@ export async function discoverTenants(accessToken,{fetchImpl=fetch}={}){
   const rows=await response.json().catch(()=>null);if(!Array.isArray(rows))throw new XeroClientError('Xero returned invalid tenant information.');
   return rows.map(({id,tenantId,tenantName,tenantType})=>({connectionId:id,tenantId,tenantName,tenantType})).filter(row=>row.tenantId&&row.tenantName);
 }
+
+
+
 
