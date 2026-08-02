@@ -1,9 +1,8 @@
-import crypto from 'node:crypto';
 import {Router} from 'express';
-import {config} from '../../core/config/index.js';
 import {requireRole} from '../auth/auth.middleware.js';
 import {asyncHandler} from '../../shared/http/async-handler.js';
 import {counts, status, sync, syncJobs, testConnection} from './integration.controller.js';
+import {xeroRouter} from './xero/xero.routes.js';
 
 export const integrationRouter = Router();
 const manageCliniko = requireRole('DIRECTOR', 'PRACTICE_MANAGER');
@@ -20,25 +19,4 @@ integrationRouter.get('/cliniko/practitioners', manageCliniko, (_request, respon
     provider: 'CLINIKO'
   });
 });
-
-integrationRouter.get('/xero/connect', (request, response) => {
-  if (!config.xero.enabled) return response.status(503).send('Xero is not configured.');
-
-  const state = crypto.randomBytes(24).toString('hex');
-  request.session.xeroState = state;
-  const params = new URLSearchParams({
-    response_type: 'code',
-    client_id: config.xero.clientId,
-    redirect_uri: config.xero.redirectUri,
-    scope: 'openid profile email offline_access accounting.transactions.read accounting.reports.read',
-    state
-  });
-  response.redirect(`https://login.xero.com/identity/connect/authorize?${params}`);
-});
-
-integrationRouter.get('/xero/callback', async (request, response) => {
-  if (!request.query.code || request.query.state !== request.session.xeroState) {
-    return response.status(400).send('Invalid OAuth callback.');
-  }
-  response.redirect('/?xero=callback-received');
-});
+integrationRouter.use(xeroRouter);

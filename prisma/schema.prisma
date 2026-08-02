@@ -33,6 +33,21 @@ enum SyncJobStatus {
   CANCELLED
 }
 
+enum XeroSyncStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum XeroReportType {
+  PROFIT_AND_LOSS
+  BALANCE_SHEET
+  AGED_RECEIVABLES
+  AGED_PAYABLES
+}
+
 model User {
   id          String      @id @default(uuid()) @db.Uuid
   email       String      @unique
@@ -235,6 +250,177 @@ model ClinikoBookingPatient {
   @@id([bookingId, patientId])
   @@index([patientId])
   @@map("cliniko_booking_patients")
+}
+
+model XeroConnection {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @unique @map("tenant_id")
+  tenantName String @map("tenant_name")
+  tenantType String? @map("tenant_type")
+  externalConnectionId String? @map("external_connection_id")
+  isActive Boolean @default(false) @map("is_active")
+  connectedAt DateTime @default(now()) @map("connected_at")
+  disconnectedAt DateTime? @map("disconnected_at")
+  lastSuccessfulSyncAt DateTime? @map("last_successful_sync_at")
+  lastAttemptedSyncAt DateTime? @map("last_attempted_sync_at")
+  lastSyncStatus XeroSyncStatus? @map("last_sync_status")
+  lastSyncErrorCode String? @map("last_sync_error_code")
+  lastSyncErrorMessage String? @db.Text @map("last_sync_error_message")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  token XeroOAuthToken?
+  organisation XeroOrganisation?
+  contacts XeroContact[]
+  invoices XeroInvoice[]
+  payments XeroPayment[]
+  reports XeroReportSnapshot[]
+  syncRuns XeroSyncRun[]
+  @@index([isActive])
+  @@map("xero_connections")
+}
+
+model XeroOAuthToken {
+  id String @id @default(uuid()) @db.Uuid
+  connectionId String @unique @db.Uuid @map("connection_id")
+  encryptedAccessToken String @db.Text @map("encrypted_access_token")
+  encryptedRefreshToken String @db.Text @map("encrypted_refresh_token")
+  accessTokenExpiresAt DateTime @map("access_token_expires_at")
+  refreshTokenUpdatedAt DateTime @map("refresh_token_updated_at")
+  tokenVersion Int @default(1) @map("token_version")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  connection XeroConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  @@map("xero_oauth_tokens")
+}
+
+model XeroOrganisation {
+  id String @id @default(uuid()) @db.Uuid
+  connectionId String @unique @db.Uuid @map("connection_id")
+  tenantId String @unique @map("tenant_id")
+  legalName String? @map("legal_name")
+  organisationName String @map("organisation_name")
+  baseCurrency String @map("base_currency")
+  countryCode String? @map("country_code")
+  financialYearEndDay Int? @map("financial_year_end_day")
+  financialYearEndMonth Int? @map("financial_year_end_month")
+  organisationType String? @map("organisation_type")
+  sourceUpdatedAt DateTime? @map("source_updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  connection XeroConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  @@map("xero_organisations")
+}
+
+model XeroContact {
+  id String @id @default(uuid()) @db.Uuid
+  connectionId String @db.Uuid @map("connection_id")
+  contactId String @map("contact_id")
+  name String
+  contactStatus String? @map("contact_status")
+  isCustomer Boolean @default(false) @map("is_customer")
+  isSupplier Boolean @default(false) @map("is_supplier")
+  email String?
+  accountsReceivableTaxType String? @map("accounts_receivable_tax_type")
+  accountsPayableTaxType String? @map("accounts_payable_tax_type")
+  sourceUpdatedAt DateTime? @map("source_updated_at")
+  archivedAt DateTime? @map("archived_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  connection XeroConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  invoices XeroInvoice[]
+  @@unique([connectionId, contactId])
+  @@index([connectionId, name])
+  @@map("xero_contacts")
+}
+
+model XeroInvoice {
+  id String @id @default(uuid()) @db.Uuid
+  connectionId String @db.Uuid @map("connection_id")
+  invoiceId String @map("invoice_id")
+  contactId String? @db.Uuid @map("contact_id")
+  invoiceNumber String? @map("invoice_number")
+  reference String?
+  invoiceType String @map("invoice_type")
+  status String
+  currencyCode String @map("currency_code")
+  invoiceDate DateTime @db.Date @map("invoice_date")
+  dueDate DateTime? @db.Date @map("due_date")
+  subtotal Decimal? @db.Decimal(19,4)
+  totalTax Decimal? @db.Decimal(19,4) @map("total_tax")
+  total Decimal @db.Decimal(19,4)
+  amountDue Decimal @db.Decimal(19,4) @map("amount_due")
+  amountPaid Decimal @db.Decimal(19,4) @map("amount_paid")
+  amountCredited Decimal @db.Decimal(19,4) @map("amount_credited")
+  fullyPaidOnDate DateTime? @db.Date @map("fully_paid_on_date")
+  sourceUpdatedAt DateTime? @map("source_updated_at")
+  archivedAt DateTime? @map("archived_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  connection XeroConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  contact XeroContact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  payments XeroPayment[]
+  @@unique([connectionId, invoiceId])
+  @@index([connectionId, invoiceType, invoiceDate])
+  @@index([connectionId, dueDate, amountDue])
+  @@map("xero_invoices")
+}
+
+model XeroPayment {
+  id String @id @default(uuid()) @db.Uuid
+  connectionId String @db.Uuid @map("connection_id")
+  paymentId String @map("payment_id")
+  invoiceId String? @db.Uuid @map("invoice_id")
+  paymentDate DateTime @db.Date @map("payment_date")
+  amount Decimal @db.Decimal(19,4)
+  status String?
+  paymentType String? @map("payment_type")
+  sourceUpdatedAt DateTime? @map("source_updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  connection XeroConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  invoice XeroInvoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  @@unique([connectionId, paymentId])
+  @@index([connectionId, paymentDate])
+  @@map("xero_payments")
+}
+
+model XeroReportSnapshot {
+  id String @id @default(uuid()) @db.Uuid
+  connectionId String @db.Uuid @map("connection_id")
+  tenantId String @map("tenant_id")
+  reportType XeroReportType @map("report_type")
+  periodStart DateTime? @db.Date @map("period_start")
+  periodEnd DateTime? @db.Date @map("period_end")
+  asAtDate DateTime? @db.Date @map("as_at_date")
+  basis String?
+  currencyCode String? @map("currency_code")
+  metrics Json
+  payloadVersion Int @default(1) @map("payload_version")
+  generatedAt DateTime? @map("generated_at")
+  syncedAt DateTime @default(now()) @map("synced_at")
+  connection XeroConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  @@index([connectionId, reportType, syncedAt])
+  @@map("xero_report_snapshots")
+}
+
+model XeroSyncRun {
+  id String @id @default(uuid()) @db.Uuid
+  connectionId String @db.Uuid @map("connection_id")
+  tenantId String @map("tenant_id")
+  syncType String @map("sync_type")
+  status XeroSyncStatus @default(PENDING)
+  stage String?
+  startedAt DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  recordsFetched Int @default(0) @map("records_fetched")
+  recordsPersisted Int @default(0) @map("records_persisted")
+  errorCode String? @map("error_code")
+  errorMessage String? @db.Text @map("error_message")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  connection XeroConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  @@index([connectionId, status, createdAt])
+  @@map("xero_sync_runs")
 }
 
 model SyncJob {

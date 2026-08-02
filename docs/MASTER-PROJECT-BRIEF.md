@@ -506,6 +506,7 @@ Every future milestone is a discrete, reviewable delivery unit. A milestone may 
 - **Main features:** OAuth/token lifecycle; encrypted credential storage; tenant selection; read-only finance snapshot; sync status; reconciliation.
 - **Dependencies:** PUL-009, approved Xero scopes and production credential encryption.
 - **Acceptance criteria:** Restricted financial views reconcile to approved Xero samples; credentials are encrypted; no unauthorized accounting writes occur.
+- **Status:** Implemented for review with OAuth, authenticated token encryption, explicit tenant selection, staged local sync and read-only finance intelligence. Live consent still requires user-owned Xero credentials and approval.
 
 The original PUL-011 patient-workspace identity is retained historically in the PUL-007 brief. The approved resequencing assigns PUL-011 to Xero; later milestones retain their existing identities unless a separately approved roadmap revision explicitly moves the displaced patient workspace. This exception avoids silently renumbering PUL-012–PUL-040.
 

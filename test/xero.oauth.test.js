@@ -1,0 +1,6 @@
+import assert from 'node:assert/strict';import crypto from 'node:crypto';import test from 'node:test';import {consumeOAuthState,OAUTH_STATE_TTL_MS,XERO_SCOPES} from '../src/modules/integrations/xero/xero.oauth.js';
+const requestFor=(state,expiresAt)=>({session:{xeroOAuth:{stateHash:crypto.createHash('sha256').update(state).digest('hex'),expiresAt}}});
+test('approved Xero scopes are granular and read-only',()=>{assert.ok(XERO_SCOPES.includes('offline_access'));assert.ok(XERO_SCOPES.every(scope=>scope==='offline_access'||scope.endsWith('.read')));assert.equal(XERO_SCOPES.some(scope=>scope==='accounting.transactions'),false)});
+test('OAuth callback rejects missing state',()=>assert.throws(()=>consumeOAuthState({session:{}},null),/missing or expired/));
+test('OAuth callback rejects mismatched state and consumes it once',()=>{const request=requestFor('right',Date.now()+OAUTH_STATE_TTL_MS);assert.throws(()=>consumeOAuthState(request,'wrong'),/invalid/);assert.equal(request.session.xeroOAuth,undefined)});
+test('OAuth callback rejects expired and reused state',()=>{assert.throws(()=>consumeOAuthState(requestFor('state',Date.now()-1),'state'),/expired/);const request=requestFor('state',Date.now()+1000);consumeOAuthState(request,'state');assert.throws(()=>consumeOAuthState(request,'state'),/expired/)});

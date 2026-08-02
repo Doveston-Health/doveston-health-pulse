@@ -5,6 +5,7 @@ export default [
   {
     ignores: [
       'node_modules/**',
+      'node_modules.*/**',
       'coverage/**',
       'prisma/migrations/**'
     ]

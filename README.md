@@ -396,3 +396,15 @@ npm.cmd run dev
 ```
 
 macOS/Linux may use the equivalent `npm` commands. Search terms remain outside structured request logs because request logging records only the URL path, never the query string. Approved patient contact fields are returned only to authorized users; clinical notes, raw Cliniko payloads and local database IDs are excluded.
+
+## PUL-011 Xero read-only finance
+
+Xero remains the accounting source of truth; Pulse is a read-only visibility and prioritisation layer. Dashboard requests query PostgreSQL only. Accounting actions, reconciliation, tax work and corrections remain in Xero.
+
+Create a Xero Web App using the authorization-code flow and register the exact local callback `http://localhost:3000/api/integrations/xero/callback`; production must use its exact HTTPS URL. Configure `XERO_CLIENT_ID`, `XERO_CLIENT_SECRET`, `XERO_REDIRECT_URI` and a base64 32-byte `XERO_TOKEN_ENCRYPTION_KEY`. Generate a local key with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`, store it only in `.env` or a production secret manager, restart Pulse, connect Xero, explicitly select the organisation, then run the initial sync. Never paste secrets into chat, logs or screenshots.
+
+Approved scopes are `offline_access`, `accounting.settings.read`, `accounting.contacts.read`, `accounting.invoices.read`, `accounting.payments.read`, `accounting.banktransactions.read`, `accounting.reports.profitandloss.read`, `accounting.reports.balancesheet.read`, and `accounting.reports.aged.read`. Pulse does not silently broaden scopes.
+
+Directors and Practice Managers may connect, select an authorised tenant, sync, disconnect and access the seven `/api/finance/*` endpoints. Admins and Clinicians receive 403. Tokens use AES-256-GCM at rest and rotating refresh tokens replace the stored pair atomically. The initial lookback is 730 days, persistence batches are bounded to 100 records, and current outstanding invoices remain eligible for investigation.
+
+Invoice values are never labelled cash received; report basis, currency and freshness remain explicit. Multiple currencies are not silently combined. Finance signals are transparent rules, not predictions, financial advice or tax advice. Xero write-back, debt collection, reconciliation, payments, payroll, forecasting, AI advice and Cliniko-to-Xero reconciliation remain future work.

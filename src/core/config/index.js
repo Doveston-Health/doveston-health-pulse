@@ -28,7 +28,13 @@ const ENVIRONMENT = Object.freeze({
   xeroEnabled: Object.freeze({name: 'XERO_ENABLED'}),
   xeroClientId: Object.freeze({name: 'XERO_CLIENT_ID'}),
   xeroClientSecret: Object.freeze({name: 'XERO_CLIENT_SECRET'}),
-  xeroRedirectUri: Object.freeze({name: 'XERO_REDIRECT_URI', defaultValue: 'http://localhost:3000/api/xero/callback'})
+  xeroRedirectUri: Object.freeze({name: 'XERO_REDIRECT_URI', defaultValue: 'http://localhost:3000/api/integrations/xero/callback'}),
+  xeroTokenEncryptionKey: Object.freeze({name: 'XERO_TOKEN_ENCRYPTION_KEY'}),
+  xeroAuthBaseUrl: Object.freeze({name: 'XERO_AUTH_BASE_URL', defaultValue: 'https://login.xero.com/identity/connect/authorize'}),
+  xeroApiBaseUrl: Object.freeze({name: 'XERO_API_BASE_URL', defaultValue: 'https://api.xero.com/api.xro/2.0'}),
+  xeroConnectionsUrl: Object.freeze({name: 'XERO_CONNECTIONS_URL', defaultValue: 'https://api.xero.com/connections'}),
+  xeroTokenUrl: Object.freeze({name: 'XERO_TOKEN_URL', defaultValue: 'https://identity.xero.com/connect/token'}),
+  xeroSyncLookbackDays: Object.freeze({name: 'XERO_SYNC_LOOKBACK_DAYS', defaultValue: '730'})
 });
 
 const readOptionalString = (setting) => process.env[setting.name]?.trim() || undefined;
@@ -153,6 +159,25 @@ function loadConfig() {
   if (xeroEnabled && (!xeroClientId || !xeroClientSecret)) {
     errors.push('XERO_CLIENT_ID and XERO_CLIENT_SECRET are required when Xero functionality is enabled.');
   }
+  const xeroTokenEncryptionKey = readOptionalString(ENVIRONMENT.xeroTokenEncryptionKey);
+  if (xeroEnabled && !xeroTokenEncryptionKey) errors.push('XERO_TOKEN_ENCRYPTION_KEY is required when Xero functionality is enabled.');
+  const xeroUrl = (setting, hosts) => {
+    try {
+      const value = new URL(readString(setting));
+      if (value.protocol !== 'https:' || !hosts.includes(value.hostname)) throw new Error();
+      return value.toString();
+    } catch {
+      errors.push(`${setting.name} must use an approved Xero HTTPS host.`);
+      return undefined;
+    }
+  };
+  const xeroRedirectUri = readString(ENVIRONMENT.xeroRedirectUri);
+  try {
+    const redirect = new URL(xeroRedirectUri);
+    if (!['https:', 'http:'].includes(redirect.protocol) || (redirect.protocol === 'http:' && redirect.hostname !== 'localhost')) throw new Error();
+  } catch { errors.push('XERO_REDIRECT_URI must be HTTPS, or localhost HTTP for development.'); }
+  let xeroSyncLookbackDays;
+  try { xeroSyncLookbackDays = readPositiveInteger(ENVIRONMENT.xeroSyncLookbackDays); } catch (error) { errors.push(error.message); }
 
   if (errors.length > 0) {
     throw new Error(`Invalid application configuration:\n- ${errors.join('\n- ')}`);
@@ -202,7 +227,13 @@ function loadConfig() {
       enabled: xeroEnabled,
       clientId: xeroClientId,
       clientSecret: xeroClientSecret,
-      redirectUri: readString(ENVIRONMENT.xeroRedirectUri)
+      redirectUri: xeroRedirectUri,
+      tokenEncryptionKey: xeroTokenEncryptionKey,
+      authBaseUrl: xeroUrl(ENVIRONMENT.xeroAuthBaseUrl, ['login.xero.com']),
+      apiBaseUrl: xeroUrl(ENVIRONMENT.xeroApiBaseUrl, ['api.xero.com']),
+      connectionsUrl: xeroUrl(ENVIRONMENT.xeroConnectionsUrl, ['api.xero.com']),
+      tokenUrl: xeroUrl(ENVIRONMENT.xeroTokenUrl, ['identity.xero.com']),
+      syncLookbackDays: xeroSyncLookbackDays
     })
   });
 }
