@@ -153,3 +153,101 @@ let financeLoaded=false;const money=(value,currency)=>value===null||value===unde
 async function loadFinance(){const message=document.querySelector('#financeMessage');message.textContent='Loading locally synced Xero data…';document.querySelector('#financeRetry').hidden=true;try{const [snapshot,trend,receivables,signals,pnl]=await Promise.all([pulseJson('/api/finance/snapshot'),pulseJson('/api/finance/revenue-trend'),pulseJson('/api/finance/receivables?pageSize=10'),pulseJson('/api/finance/signals'),pulseJson('/api/finance/profit-and-loss')]);const currency=snapshot.organisation.baseCurrency;document.querySelector('#financeSnapshot').innerHTML=[['Revenue this month',money(snapshot.invoiceDerived.currentMonthRevenue,currency)],['Prior month',money(snapshot.invoiceDerived.priorComparableMonthRevenue,currency)],['Receivables',money(snapshot.invoiceDerived.accountsReceivableOutstanding,currency)],['Payables',money(snapshot.invoiceDerived.accountsPayableOutstanding,currency)],['Last sync',formatDate(snapshot.freshness.lastSuccessfulSyncAt)]].map(([label,value])=>`<article class="stat-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`).join('');const max=Math.max(1,...trend.series.map(item=>Number(item.invoiced)));document.querySelector('#financeTrend').innerHTML=trend.series.map(item=>`<div class="mini-bar"><span>${escapeHtml(item.period)}</span><i style="width:${Number(item.invoiced)/max*100}%"></i><strong>${escapeHtml(money(item.invoiced,trend.currency))}</strong></div>`).join('')||'<p>No synced revenue data.</p>';document.querySelector('#financeReceivables').innerHTML=receivables.items.map(item=>`<div class="pipeline-row"><span>${escapeHtml(item.contact?.name||'Unknown')} · ${escapeHtml(item.invoiceNumber||'No number')}</span><strong>${escapeHtml(money(item.amountDue,item.currencyCode))}</strong></div>`).join('')||'<p>No outstanding receivables.</p>';document.querySelector('#financeSignals').innerHTML=signals.signals.map(item=>`<article class="priority-card"><strong>${escapeHtml(item.code.replaceAll('_',' '))}</strong><p>${escapeHtml(item.suggestedAction)}</p><div class="impact">${escapeHtml(money(item.supportingValues.amountDue,item.supportingValues.currency))}</div></article>`).join('')||'<div class="empty-state">No finance thresholds are currently triggered.</div>';document.querySelector('#financeProfitLoss').textContent=pnl.data===null?'No synced report snapshot.':`${pnl.basis||'Xero basis'} · synced ${formatDate(pnl.syncedAt)}`;message.textContent=`${snapshot.organisation.name} · last sync ${formatDate(snapshot.freshness.lastSuccessfulSyncAt)} · read-only local data`;financeLoaded=true}catch(error){message.textContent=error.message;message.classList.add('error');document.querySelector('#financeRetry').hidden=false}}
 document.querySelector('[data-view="finance"]').addEventListener('click',()=>{if(!financeLoaded)loadFinance()});document.querySelector('#financeRetry').addEventListener('click',loadFinance);document.querySelector('#xeroFinanceSync').addEventListener('click',async event=>{event.currentTarget.disabled=true;try{await pulseJson('/api/integrations/xero/sync',{method:'POST'});await loadFinance()}catch(error){document.querySelector('#financeMessage').textContent=error.message}finally{event.currentTarget.disabled=false}});
 pulseJson('/api/auth/me').then(({user})=>{document.querySelector('[data-view="finance"]').hidden=!user.roles.some(role=>['DIRECTOR','PRACTICE_MANAGER'].includes(role))}).catch(()=>{});
+
+let practitionersLoaded = false;
+
+function practitionerStatusChip(practitioner) {
+  if (!practitioner.active) return '<span class="status-chip review">Inactive</span>';
+  if (practitioner.mappingStatus === 'DUPLICATE_NAME') {
+    return '<span class="status-chip missing">Duplicate name</span>';
+  }
+  return '<span class="status-chip booked">Mapped</span>';
+}
+
+function renderPractitionerDirectory(practitioners) {
+  const summary = document.querySelector('#practitionerSummary');
+  const directory = document.querySelector('#practitionerDirectory');
+
+  const activeCount = practitioners.filter(item => item.active).length;
+  const duplicateCount = practitioners.filter(item => item.mappingStatus === 'DUPLICATE_NAME').length;
+  const bookingCount = practitioners.reduce((total, item) => total + item.workload.bookingCount, 0);
+  const cancellationCount = practitioners.reduce(
+    (total, item) => total + item.workload.cancellationCount,
+    0
+  );
+
+  summary.innerHTML = [
+    ['Practitioners', practitioners.length],
+    ['Active', activeCount],
+    ['Bookings - 30 days', bookingCount],
+    ['Cancellations - 30 days', cancellationCount],
+    ['Mapping warnings', duplicateCount]
+  ].map(([label, value]) => summaryCard(label, value)).join('');
+
+  const rows = practitioners.map(practitioner => {
+    const locations = practitioner.locations.length
+      ? practitioner.locations.map(location => escapeHtml(location.name)).join(', ')
+      : 'No recent location activity';
+
+    return `
+      <tr>
+        <td>
+          <strong>${escapeHtml(practitioner.displayName)}</strong>
+          <div>${escapeHtml(practitioner.clinikoId)}</div>
+        </td>
+        <td>${escapeHtml(practitioner.discipline || 'Not supplied')}</td>
+        <td>${locations}</td>
+        <td>${escapeHtml(practitioner.workload.bookingCount)}</td>
+        <td>${escapeHtml(practitioner.workload.cancellationCount)}</td>
+        <td>${practitionerStatusChip(practitioner)}</td>
+        <td>${escapeHtml(formatDate(practitioner.lastSyncedAt))}</td>
+      </tr>
+    `;
+  }).join('');
+
+  directory.innerHTML = table(
+    ['Practitioner', 'Discipline', 'Recent locations', 'Bookings', 'Cancellations', 'Mapping', 'Last synced'],
+    rows
+  );
+}
+
+async function loadPractitioners() {
+  const message = document.querySelector('#practitionerMessage');
+  const retry = document.querySelector('#practitionerRetry');
+  const search = document.querySelector('#practitionerSearch').value.trim();
+  const includeInactive = document.querySelector('#practitionerIncludeInactive').checked;
+
+  message.textContent = 'Loading locally synced practitioner data�';
+  message.classList.remove('error');
+  retry.hidden = true;
+
+  try {
+    const data = await pulseJson(`/api/practitioners?${queryString({
+      search,
+      includeInactive: String(includeInactive)
+    })}`);
+
+    renderPractitionerDirectory(data.practitioners);
+    message.textContent = `${data.practitioners.length} practitioner${data.practitioners.length === 1 ? '' : 's'} shown. Read-only local Cliniko projection.`;
+    practitionersLoaded = true;
+  } catch (error) {
+    message.textContent = error.message;
+    message.classList.add('error');
+    retry.hidden = false;
+  }
+}
+
+let practitionerSearchTimer;
+
+document.querySelector('#practitionerSearch').addEventListener('input', () => {
+  clearTimeout(practitionerSearchTimer);
+  practitionerSearchTimer = setTimeout(loadPractitioners, 250);
+});
+
+document.querySelector('#practitionerIncludeInactive').addEventListener('change', loadPractitioners);
+document.querySelector('#practitionerRetry').addEventListener('click', loadPractitioners);
+document.querySelector('[data-view="team"]').addEventListener('click', () => {
+  if (!practitionersLoaded) loadPractitioners();
+});
+
+

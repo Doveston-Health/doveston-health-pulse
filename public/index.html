@@ -120,7 +120,30 @@
       </section>
 
       <section class="view empty-view" id="view-patients"><h1>Patients</h1><p>Patient journey and retention workspace is queued for the next sprint.</p></section>
-      <section class="view empty-view" id="view-team"><h1>Team</h1><p>Practitioner scorecards, mentoring and goals are queued for the next sprint.</p></section>
+      <section class="view" id="view-team">
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">READ-ONLY PRACTITIONER INTELLIGENCE</p>
+      <h1>Practitioner Management</h1>
+      <p>Directory, discipline, location activity and recent workload from locally synced Cliniko data.</p>
+    </div>
+  </div>
+  <p class="source-note"><strong>Cliniko remains the source of truth.</strong> Practitioner profile changes must be completed in Cliniko.</p>
+  <article class="panel operations-controls">
+    <div class="search table-search">
+      <span>?</span>
+      <input id="practitionerSearch" placeholder="Search practitioner or discipline..." />
+    </div>
+    <label class="checkbox-row">
+      <input id="practitionerIncludeInactive" type="checkbox" />
+      Include inactive practitioners
+    </label>
+  </article>
+  <div id="practitionerMessage" class="workspace-message" role="status"></div>
+  <button id="practitionerRetry" class="secondary-button" type="button" hidden>Retry</button>
+  <div class="operations-summary" id="practitionerSummary"></div>
+  <section id="practitionerDirectory" aria-live="polite"></section>
+</section>
       <section class="view" id="view-finance">
         <div class="page-head"><div><p class="eyebrow">READ-ONLY INSIGHTS FROM XERO</p><h1>Finance Snapshot</h1><p>Xero remains the accounting source of truth. Complete accounting actions in Xero.</p></div><button class="primary-button" id="xeroFinanceSync">Sync Xero</button></div>
         <div id="financeMessage" class="workspace-message" role="status">Loading finance data…</div><button id="financeRetry" class="secondary-button" hidden>Retry</button>
@@ -217,3 +240,5 @@
   <script src="/app.js"></script>
 </body>
 </html>
+
+

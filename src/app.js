@@ -11,6 +11,7 @@ import { loadAuthenticatedUser, requireAuthentication } from './modules/auth/aut
 import { integrationRouter } from './modules/integrations/integration.routes.js';
 import { financeRouter } from './modules/finance/finance.routes.js';
 import { operationsRouter } from './modules/operations/operations.routes.js';
+import { practitionersRouter } from './modules/practitioners/practitioners.routes.js';
 import { getHealth } from './modules/system/system.controller.js';
 import { systemRouter } from './modules/system/system.routes.js';
 
@@ -36,7 +37,11 @@ app.use(authRouter);
 app.use(requireAuthentication);
 app.use(express.static(path.resolve(__dirname, '../public'), {index: 'index.html'}));
 app.use('/api', apiRateLimiter, operationsRouter);
+app.use('/api', apiRateLimiter, practitionersRouter);
 app.use('/api', apiRateLimiter, financeRouter);
 app.use('/api', apiRateLimiter, integrationRouter);
 app.use('/api', apiNotFound);
 app.use(errorHandler);
+
+
+
